@@ -1,0 +1,178 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Work Report{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Work Report</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'work_list' %}">Works</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Report</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Report — {{ work.customer_name }}</h3>
+      <span class="modern-badge modern-badge-info">ID #{{ work.id }}</span>
+    </div>
+    <div style="padding:1.5rem; display:flex; flex-direction:column; gap:1.75rem;">
+      <section class="modern-section">
+        <header class="section-header">
+          <h4>Work Summary</h4>
+        </header>
+        <div class="work-summary-grid">
+          <div>
+            <div class="summary-label">Operator</div>
+            <div class="summary-value">{{ work.operator.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Supervisor</div>
+            <div class="summary-value">{% if work.supervisor %}{{ work.supervisor.name }}{% else %}-{% endif %}</div>
+          </div>
+          <div>
+            <div class="summary-label">Technician</div>
+            <div class="summary-value">{% if work.assigned_technician %}{{ work.assigned_technician.name }}{% else %}-{% endif %}</div>
+          </div>
+          <div>
+            <div class="summary-label">Status</div>
+            <div class="summary-value">{{ work.status }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Assigned At</div>
+            <div class="summary-value">{{ work.work_got_time|date:"Y-m-d H:i"|default:"-" }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Closed At</div>
+            <div class="summary-value">{{ work.work_closing_time|date:"Y-m-d H:i"|default:"-" }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Work Amount</div>
+            <div class="summary-value">₹{{ work.amount|floatformat:2 }}</div>
+          </div>
+        </div>
+      </section>
+
+      {% if report and report.repair_type %}
+      <section class="modern-section">
+        <header class="section-header">
+          <h4>Repair Details</h4>
+        </header>
+        <div class="modern-alert modern-alert-warning">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>
+            <strong>Repair Type:</strong> <span class="modern-badge modern-badge-warning">{{ report.repair_type }}</span>
+            {% if report.repair_type == 'Swapping' and report.returned_product %}<br>Defective Product Returned: {{ report.returned_product.name }}{% endif %}
+            {% if report.repair_type == 'Swapping' and report.returned_serial %}<br>Defective Serial: <code>{{ report.returned_serial }}</code>{% endif %}
+            {% if report.repair_type == 'Swapping' and report.returned_quantity %}<br>Quantity Returned: {{ report.returned_quantity }}{% endif %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      <section class="modern-section">
+        <header class="section-header">
+          <h4>Materials Used</h4>
+        </header>
+        <div class="modern-table-container">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th style="width:6%;">#</th>
+                <th>Product</th>
+                <th style="width:10%;">Qty</th>
+                <th style="width:12%;">Unit Price</th>
+                <th>Serial Numbers</th>
+                <th style="width:12%;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if report and report.used_materials %}
+                {% for item in report.used_materials %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>
+                    {{ item.product }}
+                    {% if item.is_serialized %}<span class="modern-badge modern-badge-info">Serialized</span>{% endif %}
+                  </td>
+                  <td>{{ item.qty }}</td>
+                  <td>₹{{ item.unit_price }}</td>
+                  <td>
+                    {% if item.is_serialized and item.serials %}
+                      {% for serial in item.serials %}
+                        <code class="serial-chip">{{ serial }}</code>
+                      {% endfor %}
+                    {% else %}
+                      <span class="subtext">-</span>
+                    {% endif %}
+                  </td>
+                  <td>₹{{ item.total }}</td>
+                </tr>
+                {% endfor %}
+              {% else %}
+                <tr>
+                  <td colspan="6" style="text-align:center; padding:1.5rem; color:#94a3b8;">No materials recorded.</td>
+                </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+        <div class="totals-grid">
+          <div>
+            <div class="summary-label">Work Amount</div>
+            <div class="summary-value">₹{{ work.amount|floatformat:2 }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Materials Subtotal</div>
+            <div class="summary-value">
+              ₹{% if report %}{{ report.materials_total|floatformat:2 }}{% else %}0.00{% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="summary-label">Subtotal</div>
+            <div class="summary-value">₹{% if report %}{{ report.subtotal_amount|floatformat:2 }}{% else %}{{ work.amount|floatformat:2 }}{% endif %}</div>
+          </div>
+          <div>
+            <div class="summary-label">Collected</div>
+            <div class="summary-value">₹{% if report %}{{ report.collected_amount|floatformat:2 }}{% else %}0.00{% endif %}</div>
+          </div>
+        </div>
+        {% if report and report.who_collected %}
+        <div class="subtext" style="text-align:right;">Collected by: {{ report.who_collected.name }}</div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+
+<style>
+.work-summary-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem; padding:1rem 1.25rem; background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.12); border-radius:10px; }
+.summary-label { font-size:0.75rem; letter-spacing:0.05em; text-transform:uppercase; color:#718096; }
+.summary-value { font-size:0.95rem; font-weight:600; color:#2d3748; }
+.section-header { margin-bottom:0.75rem; }
+.section-header h4 { margin:0; font-size:1.05rem; font-weight:600; color:#2d3748; }
+.serial-chip { display:inline-block; padding:0.25rem 0.45rem; border-radius:6px; background:rgba(148,163,184,0.15); color:#475569; font-size:0.78rem; margin:0 0.25rem 0.25rem 0; }
+.subtext { color:#94a3b8; font-size:0.8rem; }
+.totals-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:1rem; margin-top:1.25rem; }
+</style>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+

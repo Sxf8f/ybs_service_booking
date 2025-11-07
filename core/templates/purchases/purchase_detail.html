@@ -1,0 +1,56 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Purchase Details{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h3>🧾 Purchase Details</h3>
+    <div class="card mb-3">
+        <div class="card-body">
+            <p><strong>Operator:</strong> {{ purchase.operator.name }}</p>
+            <p><strong>Bill No:</strong> {{ purchase.bill_number }}</p>
+            <p><strong>Bill Date:</strong> {{ purchase.bill_date }}</p>
+            <p><strong>Created By:</strong> {{ purchase.created_by }}</p>
+            <p><strong>Created At:</strong> {{ purchase.created_at|date:"d-m-Y H:i" }}</p>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Product</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
+                    <th>Serial Numbers</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.qty }}</td>
+                    <td>₹ {{ item.unit_price }}</td>
+                    <td>₹ {{ item.subtotal|floatformat:2 }}</td>
+                    <td>
+                        {% if item.product.is_serialized %}
+                            {% for s in item.serials_json %}
+                                <div>{{ s }}</div>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center text-muted">No items found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{% url 'purchase_list' %}" class="btn btn-secondary mt-3">⬅ Back to List</a>
+</div>
+{% endblock %}

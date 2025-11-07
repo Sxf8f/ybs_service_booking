@@ -1,0 +1,32 @@
+{% extends "admin_dashboard.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between mb-2">
+    <h2>Handset Types</h2>
+    <a href="{% url 'handset_type_add' %}" class="btn btn-primary">New</a>
+  </div>
+  <div class="card">
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light"><tr><th>#</th><th>Operator</th><th>Name</th><th>Model</th><th>Purchase</th><th>Selling</th><th></th></tr></thead>
+        <tbody>
+          {% for t in types %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ t.operator.name }}</td>
+              <td>{{ t.name }}</td>
+              <td>{{ t.model_number }}</td>
+              <td>₹{{ t.purchase_price }}</td>
+              <td>₹{{ t.selling_price }}</td>
+              <td><a class="btn btn-sm btn-outline-secondary" href="{% url 'handset_type_edit' t.id %}">Edit</a></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center">No data</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

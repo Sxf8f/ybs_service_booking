@@ -1,0 +1,161 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}EC Sales Report{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">EC Sales Report</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>EC Sales Report</span>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Filters</h3>
+        </div>
+        <form method="get" action="{% url 'ec_sales_report' %}" class="modern-form">
+            <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+                <!-- Row 1: Operator and Dates -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="modern-form-group">
+                        <label class="modern-label">Operator</label>
+                        <select name="operator" class="modern-input">
+                            <option value="">All Operators</option>
+                            {% for op in operators %}
+                                <option value="{{ op.id }}" {% if selected_operator == op.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ op.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">From Date</label>
+                        <input type="date" name="date_from" class="modern-input" value="{{ date_from }}">
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">To Date</label>
+                        <input type="date" name="date_to" class="modern-input" value="{{ date_to }}">
+                    </div>
+                </div>
+
+                <!-- Row 2: User Filter (role-based) -->
+                {% if user.role != 'retailer' %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="modern-form-group">
+                        <label class="modern-label">
+                            {% if user.role == 'admin' %}User (Supervisor/FOS/Retailer){% endif %}
+                            {% if user.role == 'supervisor' %}User (FOS/Retailer){% endif %}
+                            {% if user.role == 'fos' %}Retailer{% endif %}
+                        </label>
+                        <select name="user" class="modern-input">
+                            <option value="">All Users</option>
+                            {% for u in user_choices %}
+                                <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ u.name }} ({{ u.get_role_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modern-form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                        <button type="submit" class="modern-btn modern-btn-primary">Apply Filters</button>
+                        <a href="{% url 'ec_sales_report' %}" class="modern-btn modern-btn-outline">Clear</a>
+                    </div>
+                </div>
+                {% else %}
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="modern-btn modern-btn-primary">Apply Filters</button>
+                    <a href="{% url 'ec_sales_report' %}" class="modern-btn modern-btn-outline">Clear</a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Card -->
+    {% if totals_by_operator %}
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Summary by Operator</h3>
+        </div>
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Operator</th>
+                    <th style="text-align: right;">Count</th>
+                    <th style="text-align: right;">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in totals_by_operator %}
+                <tr>
+                    <td><strong>{{ item.operator__name }}</strong></td>
+                    <td style="text-align: right;">{{ item.count }}</td>
+                    <td style="text-align: right;">
+                        <span class="modern-badge modern-badge-success">₹{{ item.total|floatformat:2 }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr style="background: #f5f5f5; font-weight: 700;">
+                    <td>TOTAL</td>
+                    <td style="text-align: right;">{{ overall_total.count }}</td>
+                    <td style="text-align: right;">
+                        <span class="modern-badge modern-badge-primary" style="font-size: 1rem;">₹{{ overall_total.total|floatformat:2 }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Sales Data Table -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Sales Records</h3>
+            <span class="modern-badge modern-badge-info">Showing {{ sales|length }} records</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Order ID</th>
+                        <th>Operator</th>
+                        <th>Retailer</th>
+                        <th>FOS</th>
+                        <th>Supervisor</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.order_date|date:"d-M-Y" }}</td>
+                        <td><code>{{ sale.order_id }}</code></td>
+                        <td><span class="modern-badge modern-badge-primary">{{ sale.operator.name }}</span></td>
+                        <td>{{ sale.retailer.name }}</td>
+                        <td>{{ sale.fos.name }}</td>
+                        <td>{{ sale.supervisor.name }}</td>
+                        <td style="text-align: right;">₹{{ sale.amount_without_commission|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: #999;">
+                            No sales records found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

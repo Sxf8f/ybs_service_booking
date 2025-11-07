@@ -1,0 +1,135 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">{{ title }}</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'operator_list' %}">Operators</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>{{ title }}</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>{{ title }}</h3>
+    </div>
+    <div style="padding: 1.5rem;">
+      {% if messages %}
+      <div class="message-stack">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="post" class="operator-form">
+        {% csrf_token %}
+        <div class="form-group">
+          {{ form.name.label_tag }}
+          {{ form.name }}
+          {% if form.name.errors %}
+            <small class="input-error">{{ form.name.errors|first }}</small>
+          {% endif %}
+        </div>
+
+        <div class="form-actions">
+          <a href="{% url 'operator_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn modern-btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  background: rgba(102, 126, 234, 0.12);
+  color: #2d3748;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.message-success {
+  border-left-color: #38a169;
+  background: rgba(56, 161, 105, 0.12);
+  color: #276749;
+}
+
+.message-error,
+.message-danger {
+  border-left-color: #e53e3e;
+  background: rgba(229, 62, 62, 0.12);
+  color: #9b2c2c;
+}
+
+.message-warning {
+  border-left-color: #d69e2e;
+  background: rgba(214, 158, 46, 0.15);
+  color: #975a16;
+}
+
+.operator-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.operator-form label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.operator-form input {
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.operator-form input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+}
+
+.input-error {
+  color: #c53030;
+  font-size: 0.85rem;
+}
+
+.form-actions {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.modern-btn-outline {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.modern-btn-outline:hover {
+  background: #eef2ff;
+}
+</style>
+{% endblock %}
+

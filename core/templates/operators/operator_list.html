@@ -1,0 +1,113 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Operators{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Operators</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Operators</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Operator Directory</h3>
+      <a href="{% url 'operator_add' %}" class="modern-btn modern-btn-primary modern-btn-sm">Add Operator</a>
+    </div>
+
+    <div style="padding: 1.5rem;">
+      {% if messages %}
+        <div class="message-stack">
+          {% for message in messages %}
+            <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if operators %}
+      <div class="modern-table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th style="width:70%;">Operator Name</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for operator in operators %}
+            <tr>
+              <td>{{ operator.name }}</td>
+              <td style="text-align:right;">
+                <a href="{% url 'operator_edit' operator.pk %}" class="modern-btn modern-btn-sm modern-btn-outline">Edit</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="modern-alert modern-alert-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>No operators found. Click "Add Operator" to get started.</div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.message {
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  background: rgba(102, 126, 234, 0.12);
+  color: #2d3748;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.message-success {
+  border-left-color: #38a169;
+  background: rgba(56, 161, 105, 0.12);
+  color: #276749;
+}
+
+.message-error,
+.message-danger {
+  border-left-color: #e53e3e;
+  background: rgba(229, 62, 62, 0.12);
+  color: #9b2c2c;
+}
+
+.message-warning {
+  border-left-color: #d69e2e;
+  background: rgba(214, 158, 46, 0.15);
+  color: #975a16;
+}
+
+.modern-btn-outline {
+  background: white;
+  color: #667eea;
+  border: 2px solid #667eea;
+}
+
+.modern-btn-outline:hover {
+  background: #eef2ff;
+}
+</style>
+{% endblock %}
+

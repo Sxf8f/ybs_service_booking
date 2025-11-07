@@ -1,0 +1,57 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Transfer to Company{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-primary text-white">
+      <h4 class="mb-0">Transfer Money to Company</h4>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <div class="alert alert-info">
+        <strong>Your Current Wallet Balance:</strong> ₹{{ current_balance|floatformat:2 }}
+      </div>
+
+      <div class="mb-3">
+        <p><strong>Transfer To:</strong> {{ admin_user.name }}</p>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label for="amount" class="form-label"><strong>Amount to Transfer:</strong></label>
+          <input type="number" class="form-control" id="amount" name="amount"
+                 step="0.01" min="0.01" max="{{ current_balance }}" required
+                 placeholder="Enter amount">
+          <small class="text-muted">Maximum: ₹{{ current_balance|floatformat:2 }}</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="remark" class="form-label">Remark (Optional):</label>
+          <textarea class="form-control" id="remark" name="remark" rows="3"
+                    placeholder="Add any notes or remarks about this transfer"></textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Send Transfer Request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

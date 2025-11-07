@@ -1,0 +1,48 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Unassign Pincode{% endblock %}
+{% block extra_css %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">🔗 Unassign Pincode</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>Warning!</strong> This will remove the pincode assignment.
+                    </div>
+                    
+                    <p>Are you sure you want to unassign this pincode from the supervisor?</p>
+                    
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h6 class="card-title">Assignment Details:</h6>
+                            <p><strong>Supervisor:</strong> {{ assignment.supervisor.name }}</p>
+                            <p><strong>Pincode:</strong> {{ assignment.pincode.pincode }}</p>
+                            <p><strong>Area:</strong> {{ assignment.pincode.area_name }}</p>
+                            <p><strong>City:</strong> {{ assignment.pincode.city }}</p>
+                            <p><strong>State:</strong> {{ assignment.pincode.state }}</p>
+                            <p><strong>Assigned At:</strong> {{ assignment.assigned_at|date:"d-m-Y H:i" }}</p>
+                            <p><strong>Assigned By:</strong> {{ assignment.assigned_by.name|default:"System" }}</p>
+                        </div>
+                    </div>
+                    
+                    <form method="POST" class="mt-3">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'pincode_assignment_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-warning">🔗 Unassign Pincode</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Stock Sales Report{% endblock %}
+{% block extra_css %}
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <h2>Add Purchase</h2>
+  <form method="post" id="purchaseForm">
+    {% csrf_token %}
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Operator</label>
+        <select id="operatorSelect" name="operator_id" class="form-select" required>
+          <option value="">Select operator</option>
+          {% for op in operators %}<option value="{{ op.id }}">{{ op.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Bill Number</label>
+        <input name="bill_number" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Bill Date</label>
+        <input name="bill_date" type="date" class="form-control" required>
+      </div>
+    </div>
+
+    <hr class="my-3">
+
+    <div class="table-responsive">
+      <table class="table table-bordered" id="itemsTable">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Subtotal</th>
+            <th>Serials</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody">
+          <!-- one default row -->
+          <tr>
+            <td>
+              <select name="product_id[]" class="form-select product-select" required onchange="onProductChange(this)">
+                <option value="">Select product</option>
+              </select>
+            </td>
+            <td><input name="qty[]" type="number" step="0.001" class="form-control qty" required oninput="recalcRow(this)"></td>
+            <td><input name="unit_price[]" type="number" step="0.01" class="form-control unit_price" required readonly></td>
+            <td class="row-subtotal">0.00</td>
+            <td>
+              <button type="button" class="btn btn-sm btn-outline-secondary open-serial-modal" onclick="openSerialModal(this)">Enter Serials</button>
+              <input type="hidden" name="serials_json[]" value=""/>
+            </td>
+            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRow(this)">✖</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mb-3">
+      <button type="button" class="btn btn-secondary" onclick="addRow()">➕ Add Row</button>
+      <button type="submit" class="btn btn-primary float-end">Save Purchase</button>
+    </div>
+  </form>
+</div>
+
+<!-- Serial Modal -->
+<div class="modal" tabindex="-1" id="serialModal">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Enter Serial Numbers</h5>
+        <button type="button" class="btn-close" onclick="closeSerialModal()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Enter one serial per line. You can use a barcode scanner to input into the textarea (it will append scanned value then newline).</p>
+        <textarea id="serialsTextarea" rows="10" class="form-control"></textarea>
+        <div class="form-text mt-2">Serials required: <span id="serialsRequired">0</span></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeSerialModal()">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveSerialsFromModal()">Save Serials</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Preload products grouped by operator (server-side render)
+    const productsByOperator = {
+    {% for op in operators %}
+      "{{ op.id }}": [
+        {% for p in op.products.all %}
+          {"id": "{{ p.id }}", "name": "{{ p.name|escapejs }}",
+           "is_serialized": {% if p.is_serialized %}true{% else %}false{% endif %},
+           "is_meter": {% if p.is_meter %}true{% else %}false{% endif %},
+           "price": "{{ p.price }}"
+          }{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+      ]{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+  };
+
+
+  function loadProductsForOperator(operatorId) {
+    // fill product selects
+    const selects = document.querySelectorAll(".product-select");
+    selects.forEach(sel => {
+      const curVal = sel.value;
+      sel.innerHTML = '<option value="">Select product</option>';
+      const arr = productsByOperator[operatorId] || [];
+      arr.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.id;
+        opt.text = p.name + (p.is_serialized ? " (S)" : "");
+        opt.dataset.is_serialized = p.is_serialized;
+        opt.dataset.is_meter = p.is_meter;
+        opt.dataset.price = p.price;
+        sel.appendChild(opt);
+      });
+      // try to restore selection if still present
+      sel.value = curVal || "";
+    });
+  }
+
+  document.getElementById("operatorSelect").addEventListener("change", function(){
+    loadProductsForOperator(this.value);
+  });
+
+  function addRow() {
+    const tbody = document.getElementById("itemsBody");
+    const tr = tbody.rows[0].cloneNode(true);
+    tr.querySelectorAll("input").forEach(i => i.value = "");
+    tr.querySelectorAll(".row-subtotal").forEach(td => td.innerText = "0.00");
+    tr.querySelector("select.product-select").value = "";
+    tr.querySelector("input[name='serials_json[]']").value = "";
+    tbody.appendChild(tr);
+    // ensure product list populated for selected operator
+    const opId = document.getElementById("operatorSelect").value;
+    if(opId) loadProductsForOperator(opId);
+  }
+
+  function removeRow(btn) {
+    const tbody = document.getElementById("itemsBody");
+    const row = btn.closest("tr");
+    if(tbody.rows.length > 1) row.remove();
+  }
+
+  function recalcRow(input){
+    const row = input.closest("tr");
+    const qty = parseFloat((row.querySelector(".qty").value || 0));
+    const up = parseFloat((row.querySelector(".unit_price").value || 0));
+    const subtotal = (qty * up).toFixed(2);
+    row.querySelector(".row-subtotal").innerText = subtotal;
+  }
+
+  function onProductChange(sel){
+    // mark serialized button visibility and set unit price from product
+    const row = sel.closest("tr");
+    const selected = sel.options[sel.selectedIndex];
+    const is_serialized = selected ? selected.dataset.is_serialized === "true" : false;
+    const btn = row.querySelector(".open-serial-modal");
+    if(is_serialized) btn.style.display = "inline-block"; else btn.style.display = "none";
+    // set unit price
+    const price = selected && selected.dataset.price ? parseFloat(selected.dataset.price) : 0;
+    const upInput = row.querySelector('.unit_price');
+    upInput.value = price.toFixed(2);
+    recalcRow(upInput);
+  }
+
+  // Serial modal handling
+  let currentSerialRow = null;
+  let currentRequired = 0;
+  function openSerialModal(btn){
+    currentSerialRow = btn.closest("tr");
+    // set required = qty
+    const qty = parseInt(currentSerialRow.querySelector(".qty").value || 0);
+    currentRequired = qty;
+    document.getElementById("serialsRequired").innerText = currentRequired;
+    // load existing serials in hidden input
+    const hidden = currentSerialRow.querySelector("input[name='serials_json[]']");
+    let currentList = [];
+    try { currentList = JSON.parse(hidden.value || "[]"); } catch(e) { currentList = []; }
+    document.getElementById("serialsTextarea").value = currentList.join("\n");
+    document.getElementById("serialModal").style.display = "block";
+  }
+  function closeSerialModal(){
+    document.getElementById("serialModal").style.display = "none";
+    currentSerialRow = null;
+  }
+  function saveSerialsFromModal(){
+    const txt = document.getElementById("serialsTextarea").value;
+    const arr = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if(arr.length !== currentRequired){
+      if(!confirm(`You've entered ${arr.length} serials but qty is ${currentRequired}. Proceed?`)){
+        return;
+      }
+    }
+    // store JSON into hidden input
+    currentSerialRow.querySelector("input[name='serials_json[]']").value = JSON.stringify(arr);
+    closeSerialModal();
+  }
+
+  // close modal when clicking outside (simple)
+  window.onclick = function(e){
+    const modal = document.getElementById("serialModal");
+    if(e.target === modal) closeSerialModal();
+  }
+
+  // When form is submitted, ensure all .product-select are within selected operator list.
+  document.getElementById("purchaseForm").addEventListener("submit", function(e){
+    const opId = document.getElementById("operatorSelect").value;
+    if(!opId){ alert("Select operator"); e.preventDefault(); return; }
+    // optional: validate serial counts for serialized items
+  });
+</script>
+
+<style>
+/* Simple modal styles to avoid bootstrap dependency in example */
+.modal { display:none; position:fixed; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.4); }
+.modal-dialog{ max-width:900px; margin:80px auto; }
+</style>
+
+{% endblock %}

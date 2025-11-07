@@ -1,0 +1,140 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Handset Transfer History{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Handset Transfer History</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Transfer History</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Filters</h3>
+    </div>
+    <form method="get" style="padding: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="modern-form-group">
+          <label class="modern-label">Status</label>
+          <select name="status" class="modern-input">
+            <option value="">All Status</option>
+            <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Pending</option>
+            <option value="accepted" {% if request.GET.status == "accepted" %}selected{% endif %}>Accepted</option>
+            <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>Rejected</option>
+          </select>
+        </div>
+        <div class="modern-form-group" style="display: flex; align-items: flex-end;">
+          <button type="submit" class="modern-btn modern-btn-primary" style="width: 100%;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            Filter
+          </button>
+        </div>
+        <div class="modern-form-group" style="display: flex; align-items: flex-end;">
+          <a href="?export=csv{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}" class="modern-btn modern-btn-secondary" style="width: 100%;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Export CSV
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Transfer History</h3>
+      <span class="modern-badge modern-badge-primary">{{ transfers.count }} records</span>
+    </div>
+    <div class="modern-table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Serial Number</th>
+            <th>Handset Type</th>
+            <th>Operator</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for transfer in transfers %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                {{ transfer.created_at|date:"d/m/Y" }}
+                <br>
+                <small style="color: #666;">{{ transfer.created_at|date:"H:i" }}</small>
+              </td>
+              <td><code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ transfer.handset.serial_number }}</code></td>
+              <td>
+                <strong>{{ transfer.handset.handset_type.name }}</strong>
+              </td>
+              <td><span class="modern-badge modern-badge-info">{{ transfer.handset.handset_type.operator.name }}</span></td>
+              <td>
+                <strong>{{ transfer.from_user.name }}</strong>
+                <br>
+                <small style="color: #666;">{{ transfer.from_user.get_role_display }}</small>
+              </td>
+              <td>
+                <strong>{{ transfer.to_user.name }}</strong>
+                <br>
+                <small style="color: #666;">{{ transfer.to_user.get_role_display }}</small>
+              </td>
+              <td>
+                {% if transfer.transfer_type == 'transfer' %}
+                  <span class="modern-badge modern-badge-primary">Transfer</span>
+                {% else %}
+                  <span class="modern-badge modern-badge-warning">Return</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if transfer.status == 'pending' %}
+                  <span class="modern-badge modern-badge-warning">Pending</span>
+                {% elif transfer.status == 'accepted' %}
+                  <span class="modern-badge modern-badge-success">Accepted</span>
+                {% else %}
+                  <span class="modern-badge modern-badge-danger">Rejected</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if transfer.remark %}
+                  <small>{{ transfer.remark|truncatewords:8 }}</small>
+                {% else %}
+                  <span style="color: #999;">-</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 2rem; color: #999;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div style="margin-top: 0.5rem;">No transfer history</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

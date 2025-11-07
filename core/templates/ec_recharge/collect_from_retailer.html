@@ -1,0 +1,143 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Collect from Retailers{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">Collect EC from Retailers</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>Collect from Retailers</span>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="modern-alert modern-alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Summary by Operator -->
+    {% if pending_summary %}
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Summary by Operator</h3>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Operator</th>
+                        <th style="text-align: right;">Total Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pending_summary %}
+                    <tr>
+                        <td><strong>{{ item.operator__name }}</strong></td>
+                        <td style="text-align: right;">
+                            <span class="modern-badge modern-badge-danger" style="font-size: 1rem;">
+                                ₹{{ item.total_pending|floatformat:2 }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Retailers with Collection Forms -->
+    {% if retailers_data %}
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Collect from Retailers</h3>
+            <span class="modern-badge modern-badge-info">{{ retailers_data|length }} Retailer(s) with pending</span>
+        </div>
+
+        {% for data in retailers_data %}
+        <div style="border-bottom: 2px solid #e0e0e0; padding: 1.5rem;">
+            <!-- Retailer Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <div>
+                    <h4 style="margin: 0; font-size: 1.2rem; color: #333;">{{ data.retailer.name }}</h4>
+                    <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        {% for wallet in data.wallets %}
+                        <span class="modern-badge modern-badge-primary">
+                            {{ wallet.operator.name }}: ₹{{ wallet.pending_amount|floatformat:2 }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85rem; color: #666; text-align: right;">Total Pending</div>
+                    <div style="font-size: 1.8rem; font-weight: 700; color: #d32f2f;">
+                        ₹{{ data.total_pending|floatformat:2 }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collection Form -->
+            <form method="post" style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                {% csrf_token %}
+                <input type="hidden" name="retailer_id" value="{{ data.retailer.id }}">
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                    <div class="modern-form-group">
+                        <label class="modern-label">Collection Amount * (Max: ₹{{ data.total_pending|floatformat:2 }})</label>
+                        <input type="number" name="collection_amount" step="0.01"
+                               max="{{ data.total_pending }}" class="modern-input"
+                               placeholder="Enter amount" required>
+                        <div class="form-hint">Enter full or partial payment</div>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">Collection Date *</label>
+                        <input type="date" name="collection_date" class="modern-input"
+                               value="{% now 'Y-m-d' %}" required>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">Remarks</label>
+                        <input type="text" name="remarks" class="modern-input"
+                               placeholder="Optional notes">
+                    </div>
+
+                    <button type="submit" class="modern-btn modern-btn-success">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem;">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                            <path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/>
+                        </svg>
+                        Collect Payment
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No pending collections from retailers at the moment.</div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.form-hint {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+</style>
+{% endblock %}

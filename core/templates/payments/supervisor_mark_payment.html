@@ -1,0 +1,81 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header bg-success text-white"><strong>{{ title }}</strong></div>
+    <div class="card-body">
+      <div class="alert alert-info">
+        <strong>Info:</strong> Mark payment as paid to freelance technicians. They will need to accept it before the amount is deducted from their pending balance.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="technician_id" class="form-label"><strong>Select Freelance Technician:</strong></label>
+            <select name="technician_id" id="technician_id" class="form-select" required onchange="updatePendingAmount()">
+              <option value="">-- Select Technician --</option>
+              {% for tech in technicians %}
+                <option value="{{ tech.id }}" data-pending="{{ tech.pending_amount }}">
+                  {{ tech.name }} - {{ tech.phone }} (Pending: ₹{{ tech.pending_amount }})
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label"><strong>Pending Amount:</strong></label>
+            <div class="form-control bg-light" id="pending_display">₹0.00</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="amount" class="form-label"><strong>Payment Amount:</strong></label>
+            <input type="number" class="form-control" id="amount" name="amount"
+                   step="0.01" min="0.01" required placeholder="Enter amount to pay">
+            <small class="text-muted">Amount to mark as paid</small>
+          </div>
+
+          <div class="col-md-6">
+            <label for="work_id" class="form-label"><strong>Work ID (Optional):</strong></label>
+            <input type="number" class="form-control" id="work_id" name="work_id"
+                   placeholder="Enter work ID if specific work">
+            <small class="text-muted">Leave blank for general payment</small>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="remark" class="form-label"><strong>Remark (Optional):</strong></label>
+          <textarea class="form-control" id="remark" name="remark" rows="3"
+                    placeholder="Any notes or remarks"></textarea>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-success">Mark as Paid</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="mt-4">
+    <a href="{% url 'payment_history' %}" class="btn btn-outline-primary">View Payment History</a>
+  </div>
+</div>
+
+<script>
+function updatePendingAmount() {
+  const select = document.getElementById('technician_id');
+  const option = select.options[select.selectedIndex];
+  const pending = option.getAttribute('data-pending') || '0.00';
+  document.getElementById('pending_display').innerText = '₹' + parseFloat(pending).toFixed(2);
+}
+</script>
+{% endblock %}

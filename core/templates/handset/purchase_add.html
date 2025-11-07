@@ -1,0 +1,81 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Add Handset Purchase{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white"><strong>Add Handset Purchase</strong></div>
+    <div class="card-body">
+      <div class="alert alert-info">
+        <strong>Important:</strong> Each handset must have a unique serial number. Enter all serial numbers below, one per line. You can also optionally enter IMEI numbers.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_handset_type" class="form-label"><strong>Handset Type:</strong></label>
+            {{ form.handset_type }}
+            {% if not form.handset_type.field.queryset.exists %}
+              <small class="text-danger">No handset types available. Please add handset types first.</small>
+            {% endif %}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_purchase_date" class="form-label"><strong>Purchase Date:</strong></label>
+            {{ form.purchase_date }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_total_quantity" class="form-label"><strong>Total Quantity:</strong></label>
+            {{ form.total_quantity }}
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="mb-3">
+          <label for="serial_numbers" class="form-label"><strong>Serial Numbers (one per line):</strong></label>
+          <textarea
+            name="serial_numbers"
+            id="serial_numbers"
+            class="form-control"
+            rows="10"
+            placeholder="HS001&#10;HS002&#10;HS003&#10;..."
+            required></textarea>
+          <small class="text-muted">Enter exactly the same number of serial numbers as total quantity above.</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="imei_numbers" class="form-label"><strong>IMEI Numbers (optional, one per line):</strong></label>
+          <textarea
+            name="imei_numbers"
+            id="imei_numbers"
+            class="form-control"
+            rows="10"
+            placeholder="IMEI001&#10;IMEI002&#10;IMEI003&#10;..."></textarea>
+          <small class="text-muted">Optional: Enter IMEI numbers if available. Should match the order of serial numbers.</small>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'handset_purchase_list' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create Purchase</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+  }
+</style>
+{% endblock %}

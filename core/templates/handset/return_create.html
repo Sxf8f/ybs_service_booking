@@ -1,0 +1,81 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Return Handsets{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Return Handsets</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'handset_stock_list' %}">Handset Stock</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Return</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Return Handsets</h3>
+      <span class="modern-badge modern-badge-warning">Return to Previous Level</span>
+    </div>
+
+    <div style="padding: 1.5rem;">
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>
+          <strong>Note:</strong> Enter the serial numbers of handsets you want to return, one per line.
+          {% if user.role == 'retailer' %}
+            They will be sent back to your FOS.
+          {% elif user.role == 'fos' %}
+            They will be sent back to your supervisor.
+          {% elif user.role == 'supervisor' %}
+            They will be sent back to admin.
+          {% endif %}
+        </div>
+      </div>
+
+      <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        <div class="modern-form-group">
+          <label class="modern-label" for="serial_numbers">Serial Numbers:</label>
+          <textarea
+            name="serial_numbers"
+            id="serial_numbers"
+            class="modern-input"
+            rows="8"
+            placeholder="Enter serial numbers, one per line"
+            required></textarea>
+          <small style="color: #666; font-size: 0.85rem;">Enter one serial number per line</small>
+        </div>
+
+        <div class="modern-form-group" style="margin-top: 1rem;">
+          <label class="modern-label" for="remark">Reason for Return (optional):</label>
+          <textarea
+            name="remark"
+            id="remark"
+            class="modern-input"
+            rows="3"
+            placeholder="Enter reason for returning these handsets"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <a href="{% url 'handset_stock_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn modern-btn-warning">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 12 9 17 14 12"></polyline>
+              <line x1="20" y1="5" x2="4" y2="5"></line>
+            </svg>
+            Return Handsets
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

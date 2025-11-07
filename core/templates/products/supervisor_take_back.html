@@ -1,0 +1,143 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Take Back Stock from Technician{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="{% url 'stock_overview' %}" class="btn btn-secondary btn-sm">← Back to Stock Overview</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-danger text-white">
+      <h4 class="mb-0">Take Back Stock from Technician</h4>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <!-- Step 1: Select Technician -->
+      <div class="card mb-3">
+        <div class="card-header bg-light">
+          <strong>Step 1: Select Technician</strong>
+        </div>
+        <div class="card-body">
+          <form method="get" action="{% url 'supervisor_take_back_from_technician' %}">
+            <div class="row">
+              <div class="col-md-6">
+                <label for="technician" class="form-label">Select Technician:</label>
+                <select name="technician" id="technician" class="form-select" onchange="this.form.submit()">
+                  <option value="">-- Select a technician --</option>
+                  {% for tech in technicians %}
+                    <option value="{{ tech.id }}" {% if selected_tech_id == tech.id|stringformat:"s" %}selected{% endif %}>
+                      {{ tech.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Step 2: Take Back Stock -->
+      {% if tech_stocks %}
+      <div class="card">
+        <div class="card-header bg-light">
+          <strong>Step 2: Select Products to Take Back</strong>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="technician" value="{{ selected_tech_id }}">
+
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Product</th>
+                    <th>Available Qty</th>
+                    <th>Take Back Qty</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for stock in tech_stocks %}
+                  <tr>
+                    <td><strong>{{ stock.product.name }}</strong></td>
+                    <td>{{ stock.qty }}</td>
+                    <td>
+                      <input type="number" class="form-control" style="width: 120px;"
+                             id="qty_{{ stock.product.id }}" step="0.001" min="0" max="{{ stock.qty }}"
+                             placeholder="0">
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-danger"
+                              onclick="takeBack({{ stock.product.id }}, '{{ stock.product.name }}', {{ stock.qty }})">
+                        Take Back
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <input type="hidden" name="product" id="product_input">
+            <input type="hidden" name="qty" id="qty_input">
+          </form>
+        </div>
+      </div>
+      {% elif selected_tech_id %}
+      <div class="alert alert-info">
+        This technician has no stock available to take back.
+      </div>
+      {% else %}
+      <div class="alert alert-info">
+        Please select a technician to view their stock.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+function takeBack(productId, productName, maxQty) {
+  const qtyInput = document.getElementById('qty_' + productId);
+  const qty = parseFloat(qtyInput.value);
+
+  if (!qty || qty <= 0) {
+    alert('Please enter a valid quantity.');
+    return;
+  }
+
+  if (qty > maxQty) {
+    alert(`Cannot take back more than available quantity (${maxQty}).`);
+    return;
+  }
+
+  if (confirm(`Take back ${qty} of ${productName} from this technician?`)) {
+    document.getElementById('product_input').value = productId;
+    document.getElementById('qty_input').value = qty;
+    document.querySelector('form[method="post"]').submit();
+  }
+}
+</script>
+
+<style>
+.btn-close {
+  background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+  border: 0;
+  border-radius: 0.25rem;
+  opacity: .5;
+  width: 1em;
+  height: 1em;
+  padding: 0.25em 0.25em;
+}
+</style>
+{% endblock %}

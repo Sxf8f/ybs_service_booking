@@ -1,0 +1,395 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Close Work{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card mb-3">
+    <div class="card-header bg-dark text-white"><strong>Close Work — {{ work.customer_name }}</strong></div>
+    <div class="card-body">
+      <div class="row">
+        <div class="col-md-6">
+          <div><strong>Operator:</strong> {{ work.operator.name }}</div>
+          <div><strong>Supervisor:</strong> {% if work.supervisor %}{{ work.supervisor.name }}{% endif %}</div>
+          <div><strong>Technician:</strong> {% if work.assigned_technician %}{{ work.assigned_technician.name }}{% endif %}</div>
+        </div>
+        <div class="col-md-6">
+          <div><strong>Kind:</strong> {{ work.get_kind_display }}</div>
+          <div><strong>Category:</strong> {{ work.get_category_display }}</div>
+          <div><strong>Job:</strong> {{ work.get_job_type_display }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" id="work-close-form">
+    {% csrf_token %}
+
+    {% if is_repair_work %}
+    <!-- Repair Type Selection -->
+    <div class="card mb-3">
+      <div class="card-header bg-warning text-dark"><strong>Repair Type</strong></div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label"><strong>Select Repair Type:</strong></label>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="repair_type" id="repair_swapping" value="Swapping" onchange="toggleReturnedProduct()">
+            <label class="form-check-label" for="repair_swapping">
+              Swapping (Replace defective product with new one)
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="repair_type" id="repair_field" value="Field Repair" onchange="toggleReturnedProduct()">
+            <label class="form-check-label" for="repair_field">
+              Field Repair (Fixed on-site)
+            </label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="repair_type" id="repair_retrieval" value="Retrieval" onchange="toggleReturnedProduct()">
+            <label class="form-check-label" for="repair_retrieval">
+              Retrieval (Collected defective item only)
+            </label>
+          </div>
+        </div>
+
+        <!-- Returned Product Section (shown only for Swapping) -->
+        <div id="returned-product-section" style="display:none;">
+          <hr>
+          <h6 class="text-danger">Product Returned by Customer (Defective)</h6>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="returned_product_id" class="form-label">Defective Product:</label>
+              <select class="form-select" id="returned_product_id" name="returned_product_id" onchange="checkReturnedProductSerialized()">
+                <option value="">Select Product</option>
+                {% for p in all_products %}
+                  <option value="{{ p.id }}" data-serialized="{{ p.is_serialized|lower }}">{{ p.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4 mb-3" id="returned-serial-container" style="display:none;">
+              <label for="returned_serial" class="form-label">Serial Number:</label>
+              <input type="text" class="form-control" id="returned_serial" name="returned_serial" placeholder="Enter serial number">
+              <small class="text-muted">Serial of defective product</small>
+            </div>
+            <div class="col-md-4 mb-3" id="returned-qty-container">
+              <label for="returned_quantity" class="form-label">Quantity:</label>
+              <input type="number" class="form-control" id="returned_quantity" name="returned_quantity" step="0.001" min="0" value="1">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  <div class="card">
+    <div class="card-header bg-light"><strong>Materials Used (Replacement Given to Customer)</strong></div>
+    <div class="card-body">
+        <div class="table-responsive">
+          <table class="table" id="usedTable">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Price/Unit</th>
+                <th>Available</th>
+                <th>Qty Used</th>
+                <th>Serial Numbers</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-row-index="0">
+                <td>
+                  <select class="form-select used-product" name="used_product_id[]" onchange="onMatChange(this, 0)">
+                    <option value="">Select</option>
+                    {% for s in tech_stocks %}
+                      <option value="{{ s.product.id }}"
+                              data-available="{{ s.qty }}"
+                              data-price="{{ s.product.price }}"
+                              data-serialized="{{ s.product.is_serialized|lower }}">
+                        {{ s.product.name }}{% if s.product.is_serialized %} (Serialized){% endif %}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="unit-price">0.00</td>
+                <td class="available">0</td>
+                <td><input class="form-control used-qty" name="used_qty[]" type="number" step="1" min="0" value="0" onchange="onQtyChange(this, 0)"></td>
+                <td class="serial-numbers-cell">
+                  <div class="serial-inputs-container"></div>
+                </td>
+                <td class="line-total">0.00</td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removeRow(this)">✖</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mb-3">
+          <button type="button" class="btn btn-secondary" onclick="addRow()">Add Material</button>
+        </div>
+
+        <!-- Amount Summary -->
+        <div class="card mb-3 bg-light">
+          <div class="card-body">
+            <h5 class="card-title">Amount Summary</h5>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-2"><strong>Work Amount:</strong> <span class="float-end">₹<span id="work-amount">{{ work.amount }}</span></span></div>
+                <div class="mb-2"><strong>Materials Total:</strong> <span class="float-end">₹<span id="materials-total">0.00</span></span></div>
+                <hr>
+                <div class="mb-2"><strong>Subtotal (Amount Due):</strong> <span class="float-end"><strong>₹<span id="subtotal">{{ work.amount }}</span></strong></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collection Details -->
+        <!-- OTP Verification Section -->
+        <div class="card mb-3">
+          <div class="card-header bg-danger text-white"><strong>Customer OTP Verification</strong></div>
+          <div class="card-body">
+            {% if work.closing_otp %}
+              <div class="alert alert-success">
+                <strong>OTP Sent!</strong> OTP was sent to customer {{ work.customer_name }} at {{ work.otp_sent_at|date:"Y-m-d H:i" }}
+                {% if user.role == 'admin' %}
+                  <br><strong>OTP:</strong> <code class="fs-5">{{ work.closing_otp }}</code>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="alert alert-warning">
+                <strong>No OTP Generated Yet</strong> - Click the button below to generate and send OTP to customer.
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 mb-3">
+              <a href="{% url 'work_send_otp' work.id %}" class="btn btn-primary">
+                {% if work.closing_otp %}Resend OTP to Customer{% else %}Send OTP to Customer{% endif %}
+              </a>
+              {% if user.role == 'admin' %}
+                <a href="{% url 'admin_otp_list' %}" class="btn btn-info">View All OTPs</a>
+              {% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label for="closing_otp" class="form-label"><strong>Enter OTP from Customer:</strong></label>
+              <input type="text" class="form-control" id="closing_otp" name="closing_otp"
+                     maxlength="6" placeholder="Enter 6-digit OTP"
+                     {% if user.role != 'admin' %}required{% endif %}>
+              <small class="text-muted">
+                {% if user.role == 'admin' %}
+                  As admin, you can bypass OTP by leaving this field empty or enter the correct OTP.
+                {% else %}
+                  Enter the 6-digit OTP that was sent to the customer's WhatsApp.
+                {% endif %}
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-body">
+            <h5 class="card-title">Collection Details</h5>
+
+            <div class="mb-3">
+              <label for="collected_amount" class="form-label"><strong>Amount Collected from Customer:</strong></label>
+              <input type="number" class="form-control" id="collected_amount" name="collected_amount"
+                     step="0.01" min="0" required placeholder="Enter amount collected">
+              <small class="text-muted">Enter the amount actually collected from the customer</small>
+            </div>
+
+            {% if user_is_supervisor %}
+            <div class="mb-3">
+              <label for="who_collected" class="form-label"><strong>Who Collected the Money?</strong></label>
+              <select class="form-select" id="who_collected" name="who_collected" required>
+                <option value="{{ work.assigned_technician.id }}">{{ work.assigned_technician.name }} (Technician)</option>
+                <option value="{{ work.supervisor.id }}">{{ work.supervisor.name }} (Supervisor - Me)</option>
+              </select>
+              <small class="text-muted">Select who actually collected the payment from customer</small>
+            </div>
+            {% endif %}
+
+            <!-- Freelancer Payment Amount (only for freelance technicians) -->
+            {% if work.assigned_technician.technician_type == 'freelance' %}
+            <div class="mb-3">
+              <div class="alert alert-info">
+                <strong>Freelancer Technician:</strong> {{ work.assigned_technician.name }} is a freelance technician. Enter the amount to be paid for this work.
+              </div>
+              <label for="freelancer_payment_amount" class="form-label"><strong>Payment to Freelancer for this Work:</strong></label>
+              <input type="number" class="form-control" id="freelancer_payment_amount" name="freelancer_payment_amount"
+                     step="0.01" min="0" value="0" required placeholder="Enter payment amount for freelancer">
+              <small class="text-muted">This amount will be added to technician's payment wallet</small>
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+              <label for="cancellation_remark" class="form-label">Remarks (Optional):</label>
+              <textarea class="form-control" id="cancellation_remark" name="cancellation_remark" rows="3"
+                        placeholder="Any additional notes or remarks"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'work_list' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-success">Close Work & Credit Wallet</button>
+        </div>
+    </div>
+  </div>
+  </form>
+</div>
+
+<script>
+let rowCounter = 1;
+
+function onMatChange(sel, rowIndex){
+  const row = sel.closest('tr');
+  const opt = sel.options[sel.selectedIndex];
+  const avail = opt && opt.dataset.available ? opt.dataset.available : 0;
+  const price = opt && opt.dataset.price ? opt.dataset.price : 0;
+  const isSerialized = opt && opt.dataset.serialized === 'true';
+
+  row.querySelector('.available').innerText = avail;
+  row.querySelector('.unit-price').innerText = parseFloat(price).toFixed(2);
+
+  // Store serialized status on row
+  row.dataset.serialized = isSerialized;
+
+  // If product changed, reset qty and serials
+  const qtyInput = row.querySelector('.used-qty');
+  qtyInput.value = 0;
+  row.querySelector('.serial-inputs-container').innerHTML = '';
+
+  calculateTotals();
+}
+
+function onQtyChange(input, rowIndex){
+  const row = input.closest('tr');
+  const qty = parseInt(input.value) || 0;
+  const isSerialized = row.dataset.serialized === 'true';
+
+  // Update serial number inputs for serialized products
+  if (isSerialized && qty > 0) {
+    generateSerialInputs(row, qty, rowIndex);
+  } else {
+    row.querySelector('.serial-inputs-container').innerHTML = '';
+  }
+
+  calculateTotals();
+}
+
+function generateSerialInputs(row, qty, rowIndex){
+  const container = row.querySelector('.serial-inputs-container');
+  container.innerHTML = '';
+
+  for (let i = 0; i < qty; i++) {
+    const inputGroup = document.createElement('div');
+    inputGroup.className = 'input-group input-group-sm mb-1';
+    inputGroup.innerHTML = `
+      <span class="input-group-text">#${i+1}</span>
+      <input type="text" class="form-control form-control-sm" name="used_serials_${rowIndex}[]"
+             placeholder="Serial number" required>
+    `;
+    container.appendChild(inputGroup);
+  }
+}
+
+function calculateTotals(){
+  const workAmount = parseFloat(document.getElementById('work-amount').innerText) || 0;
+  let materialsTotal = 0;
+
+  const tbody = document.querySelector('#usedTable tbody');
+  const rows = tbody.querySelectorAll('tr');
+
+  rows.forEach(row => {
+    const qtyInput = row.querySelector('.used-qty');
+    const unitPriceCell = row.querySelector('.unit-price');
+    const lineTotalCell = row.querySelector('.line-total');
+
+    const qty = parseFloat(qtyInput.value) || 0;
+    const unitPrice = parseFloat(unitPriceCell.innerText) || 0;
+    const lineTotal = qty * unitPrice;
+
+    lineTotalCell.innerText = lineTotal.toFixed(2);
+    materialsTotal += lineTotal;
+  });
+
+  const subtotal = workAmount + materialsTotal;
+
+  document.getElementById('materials-total').innerText = materialsTotal.toFixed(2);
+  document.getElementById('subtotal').innerText = subtotal.toFixed(2);
+}
+
+function addRow(){
+  const tbody = document.querySelector('#usedTable tbody');
+  const newRow = tbody.rows[0].cloneNode(true);
+
+  // Update row index
+  newRow.dataset.rowIndex = rowCounter;
+
+  // Reset values
+  newRow.querySelector('.used-product').value = '';
+  newRow.querySelector('.available').innerText = '0';
+  newRow.querySelector('.unit-price').innerText = '0.00';
+  newRow.querySelector('.used-qty').value = '0';
+  newRow.querySelector('.line-total').innerText = '0.00';
+  newRow.querySelector('.serial-inputs-container').innerHTML = '';
+  newRow.dataset.serialized = 'false';
+
+  // Update onchange handlers with new row index
+  const selectElem = newRow.querySelector('.used-product');
+  selectElem.setAttribute('onchange', `onMatChange(this, ${rowCounter})`);
+
+  const qtyInput = newRow.querySelector('.used-qty');
+  qtyInput.setAttribute('onchange', `onQtyChange(this, ${rowCounter})`);
+
+  tbody.appendChild(newRow);
+  rowCounter++;
+  calculateTotals();
+}
+
+function removeRow(btn){
+  const tbody = document.querySelector('#usedTable tbody');
+  if(tbody.rows.length > 1){
+    btn.closest('tr').remove();
+    calculateTotals();
+  }
+}
+
+// Repair type functions
+function toggleReturnedProduct(){
+  const swapping = document.getElementById('repair_swapping');
+  const section = document.getElementById('returned-product-section');
+
+  if (swapping && swapping.checked) {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+  }
+}
+
+function checkReturnedProductSerialized(){
+  const select = document.getElementById('returned_product_id');
+  const opt = select.options[select.selectedIndex];
+  const isSerialized = opt && opt.dataset.serialized === 'true';
+
+  const serialContainer = document.getElementById('returned-serial-container');
+  const qtyContainer = document.getElementById('returned-qty-container');
+
+  if (isSerialized) {
+    serialContainer.style.display = 'block';
+    qtyContainer.style.display = 'none';
+    document.getElementById('returned_quantity').value = '1';
+  } else {
+    serialContainer.style.display = 'none';
+    qtyContainer.style.display = 'block';
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  calculateTotals();
+});
+</script>
+{% endblock %}

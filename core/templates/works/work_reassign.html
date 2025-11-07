@@ -1,0 +1,132 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">{{ title }}</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'work_list' %}">Works</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>{{ title }}</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern" style="background:#f59e0b; color:#1f2937;">
+      <h3>{{ title }}</h3>
+    </div>
+    <div style="padding:1.5rem;">
+      {% if messages %}
+      <div class="message-stack">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <section class="modern-section">
+        <header class="section-header">
+          <h4>Work Summary</h4>
+        </header>
+        <div class="work-summary-grid">
+          <div>
+            <div class="summary-label">Customer</div>
+            <div class="summary-value">{{ work.customer_name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Mobile</div>
+            <div class="summary-value">{{ work.mobile_no }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Pincode</div>
+            <div class="summary-value">{{ work.pincode }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Operator</div>
+            <div class="summary-value">{{ work.operator.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Service</div>
+            <div class="summary-value">{{ work.type_of_service.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Work From</div>
+            <div class="summary-value">{{ work.work_from.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Amount</div>
+            <div class="summary-value">₹{{ work.amount }}</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="modern-alert modern-alert-warning" style="margin-bottom:1.25rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div><strong>Currently Assigned:</strong> {{ current_technician.name }} ({{ current_technician.phone }}){% if current_technician.technician_type %} - {{ current_technician.get_technician_type_display }}{% endif %}</div>
+      </div>
+
+      <form method="post" class="modern-form" novalidate>
+        {% csrf_token %}
+        <section class="modern-section">
+          <header class="section-header">
+            <h4>Select New Technician</h4>
+          </header>
+          <div class="modern-form-grid">
+            <div class="modern-form-group">
+              <label class="modern-label" for="technician_id">Technician *</label>
+              <select name="technician_id" id="technician_id" class="modern-input" required>
+                <option value="">-- Select New Technician --</option>
+                {% for tech in technicians %}
+                  <option value="{{ tech.id }}" {% if tech.id == current_technician.id %}selected{% endif %}>
+                    {{ tech.name }} - {{ tech.phone }}{% if tech.technician_type %} ({{ tech.get_technician_type_display }}){% endif %}{% if tech.id == current_technician.id %} - Current{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <div class="modern-alert modern-alert-info" style="margin-bottom:1.25rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div>WhatsApp notification will be sent to the newly assigned technician automatically.</div>
+        </div>
+
+        <div class="form-actions">
+          <a href="{% url 'work_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn" style="background:#f59e0b;color:#1f2937;">Reassign Work</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack { margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.75rem; }
+.message { padding:1rem 1.25rem; border-radius:8px; border-left:4px solid #667eea; background:rgba(102,126,234,0.12); color:#2d3748; font-size:0.95rem; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.message-success { border-left-color:#38a169; background:rgba(56,161,105,0.12); color:#276749; }
+.message-error, .message-danger { border-left-color:#e53e3e; background:rgba(229,62,62,0.12); color:#9b2c2c; }
+.work-summary-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem; padding:1rem 1.25rem; background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.12); border-radius:10px; }
+.summary-label { font-size:0.75rem; letter-spacing:0.05em; text-transform:uppercase; color:#718096; }
+.summary-value { font-size:0.95rem; font-weight:600; color:#2d3748; }
+.section-header { margin-bottom:1rem; }
+.section-header h4 { margin:0; font-size:1.05rem; font-weight:600; color:#2d3748; }
+.modern-form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1.25rem; }
+.modern-form-group { display:flex; flex-direction:column; gap:0.4rem; }
+.modern-label { font-weight:600; color:#4a5568; }
+.modern-input { width:100%; border:1px solid #cbd5f5; border-radius:8px; padding:0.65rem 0.85rem; font-size:0.95rem; transition:border-color 0.2s ease, box-shadow 0.2s ease; background:#fff; }
+.modern-input:focus { outline:none; border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,0.18); }
+.form-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+.modern-btn-outline { background:white; color:#667eea; border:2px solid #667eea; }
+.modern-btn-outline:hover { background:#eef2ff; }
+</style>
+{% endblock %}

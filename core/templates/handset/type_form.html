@@ -1,0 +1,44 @@
+{% extends "admin_dashboard.html" %}
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header bg-dark text-white"><strong>{{ title }}</strong></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Operator</label>
+            <select name="operator_id" class="form-select" {% if item %}disabled{% endif %}>
+              {% for op in operators %}
+                <option value="{{ op.id }}" {% if item and item.operator_id == op.id %}selected{% endif %}>{{ op.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Name</label>
+            <input class="form-control" name="name" value="{% if item %}{{ item.name }}{% endif %}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Model Number</label>
+            <input class="form-control" name="model_number" value="{% if item %}{{ item.model_number }}{% endif %}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Purchase Price</label>
+            <input class="form-control" type="number" step="0.01" name="purchase_price" value="{% if item %}{{ item.purchase_price }}{% endif %}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Selling Price</label>
+            <input class="form-control" type="number" step="0.01" name="selling_price" value="{% if item %}{{ item.selling_price }}{% endif %}" required>
+          </div>
+        </div>
+        <div class="d-flex justify-content-end mt-3">
+          <button class="btn btn-primary">Save</button>
+          <a href="{% url 'handset_type_list' %}" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

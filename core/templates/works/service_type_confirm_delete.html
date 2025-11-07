@@ -1,0 +1,47 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Delete Service Type{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Delete Service Type</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'service_type_list' %}">Service Types</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Delete</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern" style="background:#fde8e8; border-bottom-color:#fca5a5;">
+      <h3>Confirm Deletion</h3>
+    </div>
+    <div style="padding:1.5rem;">
+      <div class="modern-alert modern-alert-danger">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div>Are you sure you want to delete <strong>{{ item.name }}</strong>? This action cannot be undone.</div>
+      </div>
+
+      <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-actions">
+          <a href="{% url 'service_type_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn" style="background:#f44336;color:#fff;">Delete</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.modern-alert-danger { background: rgba(244, 67, 54, 0.12); color: #b91c1c; border-left: 4px solid #f87171; margin-bottom: 1.5rem; }
+.form-actions { display:flex; justify-content:flex-end; gap:0.75rem; }
+.modern-btn-outline { background:white; color:#667eea; border:2px solid #667eea; }
+.modern-btn-outline:hover { background:#eef2ff; }
+</style>
+{% endblock %}

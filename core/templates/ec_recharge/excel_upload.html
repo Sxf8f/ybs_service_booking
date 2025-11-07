@@ -1,0 +1,323 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Excel EC Upload{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <!-- Page Header -->
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">Excel EC Upload</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'ec_upload_select' %}">Upload EC</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>Excel Upload</span>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+        <div class="step-item completed">
+            <div class="step-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <div class="step-label">Select Hierarchy</div>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-item completed">
+            <div class="step-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <div class="step-label">Upload Method</div>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-item active">
+            <div class="step-circle">3</div>
+            <div class="step-label">Upload Excel</div>
+        </div>
+    </div>
+
+    <!-- Selected Hierarchy Card -->
+    <div class="modern-card info-card">
+        <div class="card-header-modern">
+            <h3>Selected Hierarchy</h3>
+            <a href="{% url 'ec_upload_select' %}" class="modern-btn modern-btn-outline modern-btn-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Change
+            </a>
+        </div>
+        <div class="hierarchy-grid">
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">Operator</div>
+                <div class="modern-badge modern-badge-info">{{ operator.name }}</div>
+            </div>
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">Supervisor</div>
+                <div class="modern-badge modern-badge-secondary">{{ supervisor.get_full_name }}</div>
+            </div>
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">FOS</div>
+                <div class="modern-badge modern-badge-primary">{{ fos.get_full_name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="modern-alert modern-alert-{{ message.tags }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    {% if message.tags == 'success' %}
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    {% elif message.tags == 'error' or message.tags == 'danger' %}
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="15" y1="9" x2="9" y2="15"></line>
+                        <line x1="9" y1="9" x2="15" y2="15"></line>
+                    {% else %}
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    {% endif %}
+                </svg>
+                <div>{{ message }}</div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Upload Errors -->
+    {% if errors %}
+        <div class="modern-alert modern-alert-danger">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+                <strong>{{ errors|length }} error(s) found. Please fix and try again:</strong>
+                <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                    {% for error in errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Format Requirements Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Excel File Format Requirements</h3>
+            <span class="modern-badge modern-badge-info">Required Format</span>
+        </div>
+        <p style="margin-bottom: 1rem; color: #6c757d;">Your Excel file must have the following columns <strong>in this exact order</strong>:</p>
+        <div class="modern-table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Column Name</th>
+                        <th>Description</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td><strong>Order ID</strong></td>
+                        <td>Unique order identifier</td>
+                        <td>2567377108</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td><strong>Order Date</strong></td>
+                        <td>Date of order (DD.MM.YYYY or YYYY-MM-DD)</td>
+                        <td>19.10.2025</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td><strong>Partner ID</strong></td>
+                        <td>Partner/Retailer identification number</td>
+                        <td>0660143354</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td><strong>Partner Name</strong></td>
+                        <td>Retailer name (must match exactly)</td>
+                        <td>ALMAS MOBILES</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td><strong>Transfer Amount</strong></td>
+                        <td>Total transfer amount</td>
+                        <td>2060</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td><strong>Commission</strong></td>
+                        <td>Commission amount</td>
+                        <td>60</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td><strong>Amount Without Commission</strong></td>
+                        <td>Amount retailer owes (Transfer - Commission)</td>
+                        <td>2000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modern-alert modern-alert-warning">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+                <strong>Important Rules:</strong>
+                <ul style="margin-top: 0.5rem; margin-bottom: 0;">
+                    <li>Column names must match exactly (case-insensitive)</li>
+                    <li>Partner Name must match a registered retailer under the selected FOS</li>
+                    <li>Order ID must be unique (duplicates will be skipped)</li>
+                    <li>All amounts must be numeric (no currency symbols)</li>
+                    <li>File must be .xlsx or .xls format</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Form Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Upload Excel File</h3>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="modern-form">
+            {% csrf_token %}
+
+            <div class="modern-form-group">
+                <label for="{{ form.excel_file.id_for_label }}" class="modern-label">
+                    Select Excel File <span class="required-mark">*</span>
+                </label>
+                <div class="file-upload-wrapper">
+                    <div class="file-upload-input">
+                        {{ form.excel_file }}
+                        <label for="{{ form.excel_file.id_for_label }}" class="file-upload-label">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span class="file-name">Choose file...</span>
+                        </label>
+                    </div>
+                </div>
+                {% if form.excel_file.errors %}
+                    <div class="modern-error">{{ form.excel_file.errors.0 }}</div>
+                {% endif %}
+                <div class="form-hint">Accepted formats: .xlsx, .xls (Max size: 10MB)</div>
+            </div>
+
+            <div class="form-actions-modern">
+                <button type="submit" class="modern-btn modern-btn-success modern-btn-lg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Upload & Process
+                </button>
+                <a href="{% url 'ec_upload_choice' %}" class="modern-btn modern-btn-secondary">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Back
+                </a>
+                <a href="{% url 'dashboard' %}" class="modern-btn modern-btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sample Data Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Sample Excel Data</h3>
+        </div>
+        <p style="margin-bottom: 1rem; color: #6c757d;">Here's an example of how your data should look:</p>
+        <div class="modern-table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Order Date</th>
+                        <th>Partner ID</th>
+                        <th>Partner Name</th>
+                        <th>Transfer Amount</th>
+                        <th>Commission</th>
+                        <th>Amount Without Commission</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2567377108</td>
+                        <td>19.10.2025</td>
+                        <td>0660143354</td>
+                        <td>ALMAS MOBILES</td>
+                        <td>2060</td>
+                        <td>60</td>
+                        <td>2000</td>
+                    </tr>
+                    <tr>
+                        <td>2567377109</td>
+                        <td>19.10.2025</td>
+                        <td>0660143355</td>
+                        <td>DIGITAL WORLD</td>
+                        <td>3090</td>
+                        <td>90</td>
+                        <td>3000</td>
+                    </tr>
+                    <tr>
+                        <td>2567377110</td>
+                        <td>20.10.2025</td>
+                        <td>0660143356</td>
+                        <td>MOBILE ZONE</td>
+                        <td>5150</td>
+                        <td>150</td>
+                        <td>5000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Update file input label with selected filename
+    const fileInput = document.querySelector('[name="excel_file"]');
+    const fileNameSpan = document.querySelector('.file-name');
+
+    if (fileInput && fileNameSpan) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose file...';
+            fileNameSpan.textContent = fileName;
+        });
+    }
+});
+</script>
+{% endblock %}

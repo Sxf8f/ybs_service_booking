@@ -1,0 +1,73 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Collect from FOS{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">Collect EC from FOS</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>Collect from FOS</span>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="modern-alert modern-alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% for fos_data in fos_pending %}
+    <div class="modern-card" style="margin-bottom: 1.5rem;">
+        <div class="card-header-modern">
+            <h3>{{ fos_data.fos.name }} - Total: ₹{{ fos_data.total|floatformat:2 }}</h3>
+        </div>
+
+        {% for wallet in fos_data.wallets %}
+        <form method="post" style="padding: 1rem; border-bottom: 1px solid #e0e0e0;">
+            {% csrf_token %}
+            <input type="hidden" name="fos" value="{{ fos_data.fos.id }}">
+            <input type="hidden" name="operator" value="{{ wallet.operator.id }}">
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div>
+                    <strong>{{ wallet.operator.name }}</strong><br>
+                    <span style="color: var(--danger-color);">Pending: ₹{{ wallet.pending_amount|floatformat:2 }}</span>
+                </div>
+
+                <div class="modern-form-group">
+                    <label class="modern-label">Collection Amount *</label>
+                    <input type="number" name="collection_amount" step="0.01" max="{{ wallet.pending_amount }}"
+                           class="modern-input" required>
+                </div>
+
+                <div class="modern-form-group">
+                    <label class="modern-label">Collection Date *</label>
+                    <input type="date" name="collection_date" class="modern-input"
+                           value="{% now 'Y-m-d' %}" required>
+                </div>
+
+                <div class="modern-form-group">
+                    <label class="modern-label">Remarks</label>
+                    <input type="text" name="remarks" class="modern-input">
+                </div>
+
+                <button type="submit" class="modern-btn modern-btn-success">
+                    Collect Payment
+                </button>
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <div class="modern-alert modern-alert-info">
+        No pending EC collections from FOS.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

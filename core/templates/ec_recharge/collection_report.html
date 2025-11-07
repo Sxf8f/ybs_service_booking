@@ -1,0 +1,183 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}EC Collection Report{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">EC Collection Report</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>EC Collection Report</span>
+        </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Filters</h3>
+        </div>
+        <form method="get" action="{% url 'ec_collection_report' %}" class="modern-form">
+            <div style="display: flex; flex-direction: column; gap: 1rem; padding: 1rem;">
+                <!-- Row 1: Operator, Dates, Collection Level -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="modern-form-group">
+                        <label class="modern-label">Operator</label>
+                        <select name="operator" class="modern-input">
+                            <option value="">All Operators</option>
+                            {% for op in operators %}
+                                <option value="{{ op.id }}" {% if selected_operator == op.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ op.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">From Date</label>
+                        <input type="date" name="date_from" class="modern-input" value="{{ date_from }}">
+                    </div>
+
+                    <div class="modern-form-group">
+                        <label class="modern-label">To Date</label>
+                        <input type="date" name="date_to" class="modern-input" value="{{ date_to }}">
+                    </div>
+
+                    {% if user.role == 'admin' %}
+                    <div class="modern-form-group">
+                        <label class="modern-label">Collection Level</label>
+                        <select name="collection_level" class="modern-input">
+                            <option value="">All Levels</option>
+                            {% for level_val, level_name in level_choices %}
+                                <option value="{{ level_val }}" {% if selected_level == level_val %}selected{% endif %}>
+                                    {{ level_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Row 2: User Filter (role-based) -->
+                {% if user.role != 'retailer' %}
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="modern-form-group">
+                        <label class="modern-label">
+                            {% if user.role == 'admin' %}User (Supervisor/FOS/Retailer){% endif %}
+                            {% if user.role == 'supervisor' %}User (FOS/Retailer){% endif %}
+                            {% if user.role == 'fos' %}Retailer{% endif %}
+                        </label>
+                        <select name="user" class="modern-input">
+                            <option value="">All Users</option>
+                            {% for u in user_choices %}
+                                <option value="{{ u.id }}" {% if selected_user == u.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ u.name }} ({{ u.get_role_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modern-form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                        <button type="submit" class="modern-btn modern-btn-primary">Apply Filters</button>
+                        <a href="{% url 'ec_collection_report' %}" class="modern-btn modern-btn-outline">Clear</a>
+                    </div>
+                </div>
+                {% else %}
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="modern-btn modern-btn-primary">Apply Filters</button>
+                    <a href="{% url 'ec_collection_report' %}" class="modern-btn modern-btn-outline">Clear</a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Card -->
+    {% if totals_by_level %}
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Summary by Collection Level</h3>
+        </div>
+        <table class="modern-table">
+            <thead>
+                <tr>
+                    <th>Collection Level</th>
+                    <th style="text-align: right;">Count</th>
+                    <th style="text-align: right;">Total Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in totals_by_level %}
+                <tr>
+                    <td><strong>{{ item.collection_level|capfirst }}</strong></td>
+                    <td style="text-align: right;">{{ item.count }}</td>
+                    <td style="text-align: right;">
+                        <span class="modern-badge modern-badge-success">₹{{ item.total|floatformat:2 }}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                <tr style="background: #f5f5f5; font-weight: 700;">
+                    <td>TOTAL</td>
+                    <td style="text-align: right;">{{ overall_total.count }}</td>
+                    <td style="text-align: right;">
+                        <span class="modern-badge modern-badge-primary" style="font-size: 1rem;">₹{{ overall_total.total|floatformat:2 }}</span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Collections Data Table -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Collection Records</h3>
+            <span class="modern-badge modern-badge-info">Showing {{ collections|length }} records</span>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Operator</th>
+                        <th>Level</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Collected By</th>
+                        <th style="text-align: right;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coll in collections %}
+                    <tr>
+                        <td>{{ coll.collection_date|date:"d-M-Y" }}</td>
+                        <td><span class="modern-badge modern-badge-primary">{{ coll.operator.name }}</span></td>
+                        <td>
+                            {% if coll.collection_level == 'retailer_to_fos' %}
+                                <span class="modern-badge modern-badge-info">Retailer → FOS</span>
+                            {% elif coll.collection_level == 'fos_to_supervisor' %}
+                                <span class="modern-badge modern-badge-warning">FOS → Supervisor</span>
+                            {% elif coll.collection_level == 'supervisor_to_admin' %}
+                                <span class="modern-badge modern-badge-success">Supervisor → Admin</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ coll.from_user.name }}</td>
+                        <td>{{ coll.to_user.name }}</td>
+                        <td>{{ coll.collected_by.name }}</td>
+                        <td style="text-align: right;">₹{{ coll.collection_amount|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: #999;">
+                            No collection records found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

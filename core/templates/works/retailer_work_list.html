@@ -1,0 +1,90 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}My Works{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>My Works</h2>
+    <a href="{% url 'retailer_work_add' %}" class="btn btn-primary">New Work</a>
+  </div>
+
+  <div class="alert alert-info">
+    <strong>Note:</strong> This is a read-only view of your submitted works. You can view the status but cannot edit or close them.
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white"><strong>Work List</strong></div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Customer</th>
+            <th>Mobile</th>
+            <th>Operator</th>
+            <th>Service</th>
+            <th>Pincode</th>
+            <th>Supervisor</th>
+            <th>Technician</th>
+            <th>Status</th>
+            <th>Deadline</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for w in works %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ w.customer_name }}</td>
+              <td>{{ w.mobile_no }}</td>
+              <td>{{ w.operator.name }}</td>
+              <td>{{ w.type_of_service.name }}</td>
+              <td>{{ w.pincode }}</td>
+              <td>
+                {% if w.supervisor %}
+                  {{ w.supervisor.name }}
+                {% else %}
+                  <span class="text-muted">Not assigned</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if w.assigned_technician %}
+                  {{ w.assigned_technician.name }}
+                {% else %}
+                  <span class="text-muted">Not assigned</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if w.status == 'Pending' %}
+                  <span class="badge bg-warning text-dark">{{ w.status }}</span>
+                {% elif w.status == 'Expired' %}
+                  <span class="badge bg-danger">{{ w.status }}</span>
+                {% elif w.status == 'Closed' %}
+                  <span class="badge bg-success">{{ w.status }}</span>
+                {% elif w.status == 'Cancelled' %}
+                  <span class="badge bg-secondary">{{ w.status }}</span>
+                {% else %}
+                  <span class="badge bg-info">{{ w.status }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if w.work_deadline_time %}
+                  {{ w.work_deadline_time|date:"Y-m-d H:i" }}
+                {% else %}
+                  <span class="text-muted">N/A</span>
+                {% endif %}
+              </td>
+              <td>{{ w.created_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="11" class="text-center">No works found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

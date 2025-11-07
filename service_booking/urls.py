@@ -19,6 +19,7 @@ from django.urls import path, include
 
 
 urlpatterns = [
+    path('', include('core.urls')),  # This will make / go to login
     path('admin/', admin.site.urls),
     path('api/', include('core.urls_api')),
 ]

@@ -1,0 +1,81 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Collect SIM Payment from FOS{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Collect SIM Payment from FOS</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Collect from FOS</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>FOS with Pending SIM Payments</h3>
+      <span class="modern-badge modern-badge-warning">{{ fos_pending|length }} FOS</span>
+    </div>
+
+    {% if fos_pending %}
+      <div style="padding: 1.5rem;">
+        {% for data in fos_pending %}
+          <div style="background: white; border: 2px solid #e0e0e0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <div>
+                <h4 style="margin: 0 0 0.5rem 0; color: #333; font-size: 1.2rem;">{{ data.fos.name }}</h4>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                  {% for wallet in data.wallets %}
+                    <span class="modern-badge modern-badge-info">{{ wallet.operator.name }}: ₹{{ wallet.pending_amount|floatformat:2 }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 0.85rem; color: #666; margin-bottom: 0.25rem;">Total Pending</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: #f44336;">₹{{ data.total|floatformat:2 }}</div>
+              </div>
+            </div>
+
+            <form method="post" style="display: flex; gap: 0.75rem; align-items: flex-end;">
+              {% csrf_token %}
+              <input type="hidden" name="fos_id" value="{{ data.fos.id }}">
+
+              <div class="modern-form-group" style="flex: 1;">
+                <label class="modern-label">Collection Amount</label>
+                <input type="number" name="collection_amount" class="modern-input" step="0.01" max="{{ data.total }}" required placeholder="Enter amount">
+              </div>
+
+              <div class="modern-form-group" style="flex: 1;">
+                <label class="modern-label">Collection Date</label>
+                <input type="date" name="collection_date" class="modern-input" value="{% now 'Y-m-d' %}" required>
+              </div>
+
+              <div class="modern-form-group" style="flex: 1;">
+                <label class="modern-label">Remarks (Optional)</label>
+                <input type="text" name="remarks" class="modern-input" placeholder="Payment notes">
+              </div>
+
+              <button type="submit" class="modern-btn modern-btn-success" style="height: fit-content;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                Collect
+              </button>
+            </form>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="modern-alert modern-alert-info" style="margin: 1.5rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No FOS have pending SIM payments.</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

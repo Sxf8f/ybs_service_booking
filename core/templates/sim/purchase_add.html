@@ -1,0 +1,87 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Add SIM Purchase{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white"><strong>Add SIM Purchase</strong></div>
+    <div class="card-body">
+      <div class="alert alert-info">
+        <strong>Important:</strong> Each SIM card must have a unique serial number. Enter all serial numbers below, one per line.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_operator" class="form-label"><strong>Operator:</strong></label>
+            {{ form.operator }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_purchase_date" class="form-label"><strong>Purchase Date:</strong></label>
+            {{ form.purchase_date }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_supplier_name" class="form-label"><strong>Supplier Name:</strong></label>
+            {{ form.supplier_name }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_invoice_number" class="form-label"><strong>Invoice Number:</strong></label>
+            {{ form.invoice_number }}
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <label for="id_total_quantity" class="form-label"><strong>Total Quantity:</strong></label>
+            {{ form.total_quantity }}
+          </div>
+          <div class="col-md-6 mb-3">
+            <label for="id_total_amount" class="form-label"><strong>Total Amount (₹):</strong></label>
+            {{ form.total_amount }}
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="id_remark" class="form-label"><strong>Remark:</strong></label>
+          {{ form.remark }}
+        </div>
+
+        <hr>
+
+        <div class="mb-3">
+          <label for="serial_numbers" class="form-label"><strong>Serial Numbers (one per line):</strong></label>
+          <textarea
+            name="serial_numbers"
+            id="serial_numbers"
+            class="form-control"
+            rows="10"
+            placeholder="SIM001&#10;SIM002&#10;SIM003&#10;..."
+            required></textarea>
+          <small class="text-muted">Enter exactly the same number of serial numbers as total quantity above.</small>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'sim_purchase_list' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Create Purchase</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .form-control, .form-select {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+  }
+</style>
+{% endblock %}

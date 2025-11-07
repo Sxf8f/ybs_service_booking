@@ -1,0 +1,183 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Handset Stock{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Handset Stock Management</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Handset Stock</span>
+    </div>
+  </div>
+
+  <!-- Operator-wise Summary -->
+  {% if operator_summary %}
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Operator-wise Summary</h3>
+      <span class="modern-badge modern-badge-info">Stock Overview</span>
+    </div>
+    <div class="modern-table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>Operator</th>
+            <th style="text-align: right;">Total</th>
+            <th style="text-align: right;">Available</th>
+            <th style="text-align: right;">Sold</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for summary in operator_summary %}
+            <tr>
+              <td><strong>{{ summary.handset_type__operator__name }}</strong></td>
+              <td style="text-align: right;">{{ summary.total }}</td>
+              <td style="text-align: right;">
+                <span class="modern-badge modern-badge-success">{{ summary.available }}</span>
+              </td>
+              <td style="text-align: right;">
+                <span class="modern-badge modern-badge-info">{{ summary.sold }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filters -->
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Filters</h3>
+    </div>
+    <form method="get" style="padding: 1.5rem;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+        <div class="modern-form-group">
+          <label class="modern-label">Operator</label>
+          <select name="operator" class="modern-input">
+            <option value="">All Operators</option>
+            {% for op in operators %}
+              <option value="{{ op.id }}" {% if request.GET.operator == op.id|stringformat:"s" %}selected{% endif %}>
+                {{ op.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="modern-form-group">
+          <label class="modern-label">Handset Type</label>
+          <select name="handset_type" class="modern-input">
+            <option value="">All Types</option>
+            {% for ht in handset_types %}
+              <option value="{{ ht.id }}" {% if request.GET.handset_type == ht.id|stringformat:"s" %}selected{% endif %}>
+                {{ ht.operator.name }} - {{ ht.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="modern-form-group">
+          <label class="modern-label">Status</label>
+          <select name="status" class="modern-input">
+            <option value="">All Status</option>
+            <option value="available" {% if request.GET.status == "available" %}selected{% endif %}>Available</option>
+            <option value="sold" {% if request.GET.status == "sold" %}selected{% endif %}>Sold</option>
+            <option value="damaged" {% if request.GET.status == "damaged" %}selected{% endif %}>Damaged</option>
+            <option value="returned" {% if request.GET.status == "returned" %}selected{% endif %}>Returned</option>
+          </select>
+        </div>
+
+        <div class="modern-form-group">
+          <label class="modern-label">Search Serial/IMEI/Customer</label>
+          <input type="text" name="search" class="modern-input" value="{{ request.GET.search }}" placeholder="Enter serial, IMEI or customer name">
+        </div>
+
+        <div class="modern-form-group" style="display: flex; align-items: flex-end;">
+          <button type="submit" class="modern-btn modern-btn-primary" style="width: 100%;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            Filter
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Stock List -->
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Handset Stock List</h3>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <span class="modern-badge modern-badge-primary">{{ handsets.count }} items</span>
+        <a href="?export=csv" class="modern-btn modern-btn-secondary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;">
+          Export CSV
+        </a>
+      </div>
+    </div>
+    <div class="modern-table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Serial Number</th>
+            <th>IMEI</th>
+            <th>Operator</th>
+            <th>Handset Type</th>
+            <th>Status</th>
+            {% if user.role == 'admin' %}
+            <th>Current Holder</th>
+            {% endif %}
+            <th style="text-align: right;">Purchase Price</th>
+            <th style="text-align: right;">Selling Price</th>
+            <th>Sold To</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for handset in handsets %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ handset.serial_number }}</code></td>
+              <td><code style="background: #f5f5f5; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem;">{{ handset.imei_number|default:"-" }}</code></td>
+              <td><span class="modern-badge modern-badge-info">{{ handset.handset_type.operator.name }}</span></td>
+              <td>{{ handset.handset_type.name }}{% if handset.handset_type.model_number %} ({{ handset.handset_type.model_number }}){% endif %}</td>
+              <td>
+                {% if handset.status == 'available' %}
+                  <span class="modern-badge modern-badge-success">{{ handset.status }}</span>
+                {% elif handset.status == 'sold' %}
+                  <span class="modern-badge modern-badge-info">{{ handset.status }}</span>
+                {% elif handset.status == 'damaged' %}
+                  <span class="modern-badge modern-badge-danger">{{ handset.status }}</span>
+                {% else %}
+                  <span class="modern-badge modern-badge-warning">{{ handset.status }}</span>
+                {% endif %}
+              </td>
+              {% if user.role == 'admin' %}
+              <td>{{ handset.current_holder.name|default:"N/A" }}</td>
+              {% endif %}
+              <td style="text-align: right; font-weight: 600;">₹{{ handset.purchase_price|floatformat:2 }}</td>
+              <td style="text-align: right; font-weight: 600; color: #11998e;">₹{{ handset.selling_price|floatformat:2 }}</td>
+              <td>{{ handset.sold_to_customer|default:"-" }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="{% if user.role == 'admin' %}10{% else %}9{% endif %}" style="text-align: center; padding: 2rem; color: #999;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <div style="margin-top: 0.5rem;">No handset stock found</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

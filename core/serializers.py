@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from .models import CollectionTransfer, Operator, Technician, TypeOfService, User, WorkFromTheRole, Material, WorkReport, WorkStb
+from .models import CollectionTransfer, Operator, TypeOfService, User, WorkFromTheRole, Material, WorkReport, WorkStb
 
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField()
 
     class Meta:
         model = User
@@ -14,7 +14,7 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
         user = User(**validated_data)
         if password:
-            user.set_password(password)
+            user.password = password
         user.save()
         return user
 
@@ -29,7 +29,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop("password")
         user = User(**validated_data)
-        user.set_password(password)
+        user.password = password  # plain
         user.save()
         return user
 
@@ -74,10 +74,7 @@ class MaterialSerializer(serializers.ModelSerializer):
 
 
 
-class TechnicianSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Technician
-        fields = '__all__'
+
 
 class WorkStbSerializer(serializers.ModelSerializer):
     operator_name = serializers.CharField(source='operator.name', read_only=True)

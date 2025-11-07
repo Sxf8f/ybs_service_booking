@@ -1,0 +1,133 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Pending Handset Transfers{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Pending Handset Transfers</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Pending Transfers</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Pending Transfer Batches</h3>
+      <span class="modern-badge modern-badge-warning">{{ batches|length }} batch{{ batches|length|pluralize:"es" }}</span>
+    </div>
+    <div class="modern-table-container">
+      <table class="modern-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>From</th>
+            <th>Handset Type</th>
+            <th>Quantity</th>
+            <th>Serial Numbers</th>
+            <th>Remark</th>
+            <th style="text-align: center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for batch in batches %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                {{ batch.created_at|date:"d/m/Y" }}
+                <br>
+                <small style="color: #666;">{{ batch.created_at|date:"H:i" }}</small>
+              </td>
+              <td>
+                <strong>{{ batch.from_user.name }}</strong>
+                <br>
+                <small style="color: #666;">{{ batch.from_user.get_role_display }}</small>
+              </td>
+              <td>
+                <span class="modern-badge modern-badge-info">{{ batch.handset_type.name }}</span>
+                <br>
+                <small style="color: #666;">{{ batch.handset_type.operator.name }}</small>
+              </td>
+              <td>
+                <span class="modern-badge modern-badge-primary" style="font-size: 1rem; padding: 0.5rem 0.75rem;">
+                  {{ batch.count }} Handset{{ batch.count|pluralize }}
+                </span>
+              </td>
+              <td>
+                <details style="cursor: pointer;">
+                  <summary style="color: #667eea; font-weight: 600;">View Serial Numbers ({{ batch.count }})</summary>
+                  <div style="margin-top: 0.5rem; padding: 0.5rem; background: #f8f9ff; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    {% for transfer in batch.transfers %}
+                      <code style="display: block; padding: 0.25rem; font-size: 0.85rem;">{{ forloop.counter }}. {{ transfer.handset.serial_number }}</code>
+                    {% endfor %}
+                  </div>
+                </details>
+              </td>
+              <td>
+                {% if batch.remark %}
+                  <small>{{ batch.remark|truncatewords:10 }}</small>
+                {% else %}
+                  <span style="color: #999;">-</span>
+                {% endif %}
+              </td>
+              <td style="text-align: center;">
+                <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                  <a href="{% url 'handset_transfer_action' batch.batch_id 'accept' %}"
+                     class="modern-btn modern-btn-sm modern-btn-success"
+                     onclick="return confirm('Accept {{ batch.count }} handset{{ batch.count|pluralize }}?')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Accept All
+                  </a>
+                  <a href="{% url 'handset_transfer_action' batch.batch_id 'reject' %}"
+                     class="modern-btn modern-btn-sm"
+                     style="background: #f44336; color: white;"
+                     onclick="return confirm('Reject {{ batch.count }} handset{{ batch.count|pluralize }}?')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Reject All
+                  </a>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: #999;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3;">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 8v4"></path>
+                  <path d="M12 16h.01"></path>
+                </svg>
+                <div style="margin-top: 0.5rem;">No pending transfers</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+details summary {
+  list-style: none;
+}
+details summary::-webkit-details-marker {
+  display: none;
+}
+details summary::before {
+  content: '▶ ';
+  display: inline-block;
+  margin-right: 0.3rem;
+  transition: transform 0.2s;
+}
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+</style>
+{% endblock %}

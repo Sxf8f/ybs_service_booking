@@ -1,0 +1,293 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}My EC Sales History{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <!-- Page Header -->
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">My EC Sales Upload History</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>EC Sales History</span>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if summary %}
+        <div class="stats-grid">
+            <div class="stats-card-modern card-primary">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="stats-value">{{ summary.total_uploads }}</div>
+                <div class="stats-label">Total Uploads</div>
+            </div>
+
+            <div class="stats-card-modern card-success">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                </div>
+                <div class="stats-value">{{ summary.excel_uploads }}</div>
+                <div class="stats-label">Excel Uploads</div>
+            </div>
+
+            <div class="stats-card-modern card-info">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="stats-value">{{ summary.manual_uploads }}</div>
+                <div class="stats-label">Manual Entries</div>
+            </div>
+
+            <div class="stats-card-modern card-warning">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <div class="stats-value">₹{{ summary.total_amount|floatformat:0 }}</div>
+                <div class="stats-label">Total Amount</div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Sales History Table -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>My Upload History</h3>
+            {% if sales %}
+                <button onclick="window.print()" class="modern-btn modern-btn-sm modern-btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print
+                </button>
+            {% endif %}
+        </div>
+
+        {% if sales %}
+            <div class="modern-table-container">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Upload Date</th>
+                            <th>Order ID</th>
+                            <th>Order Date</th>
+                            <th>Operator</th>
+                            <th>Supervisor</th>
+                            <th>FOS</th>
+                            <th>Retailer</th>
+                            <th>Partner Name</th>
+                            <th style="text-align: right;">Transfer</th>
+                            <th style="text-align: right;">Commission</th>
+                            <th style="text-align: right;">Amount W/O Comm.</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                            <tr>
+                                <td>
+                                    {{ sale.uploaded_at|date:"d/m/Y" }}
+                                    <br>
+                                    <small style="color: #6c757d;">{{ sale.uploaded_at|date:"H:i" }}</small>
+                                </td>
+                                <td><code style="background: #f8f9fa; padding: 0.2rem 0.4rem; border-radius: 3px;">{{ sale.order_id }}</code></td>
+                                <td>{{ sale.order_date|date:"d/m/Y" }}</td>
+                                <td><span class="modern-badge modern-badge-info">{{ sale.operator.name }}</span></td>
+                                <td>{{ sale.supervisor.name }}</td>
+                                <td>{{ sale.fos.name }}</td>
+                                <td>{{ sale.retailer.name }}</td>
+                                <td>{{ sale.partner_name }}</td>
+                                <td style="text-align: right;">₹{{ sale.transfer_amount|floatformat:2 }}</td>
+                                <td style="text-align: right;">₹{{ sale.commission|floatformat:2 }}</td>
+                                <td style="text-align: right; font-weight: 600; color: var(--danger-color);">
+                                    ₹{{ sale.amount_without_commission|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {% if sale.upload_type == 'excel' %}
+                                        <span class="modern-badge modern-badge-success">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                                <polyline points="14 2 14 8 20 8"></polyline>
+                                            </svg>
+                                            Excel
+                                        </span>
+                                    {% else %}
+                                        <span class="modern-badge modern-badge-info">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                                <line x1="2" y1="10" x2="22" y2="10"></line>
+                                            </svg>
+                                            Manual
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #f8f9fa; font-weight: 600;">
+                            <td colspan="8" style="text-align: right;">Page Total:</td>
+                            <td style="text-align: right;">₹{{ page_total_transfer|floatformat:2 }}</td>
+                            <td style="text-align: right;">₹{{ page_total_commission|floatformat:2 }}</td>
+                            <td style="text-align: right; color: var(--danger-color);">₹{{ page_total_amount|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if sales.has_other_pages %}
+                <div class="modern-pagination">
+                    {% if sales.has_previous %}
+                        <a href="?page=1" class="pagination-btn">First</a>
+                        <a href="?page={{ sales.previous_page_number }}" class="pagination-btn">Previous</a>
+                    {% endif %}
+
+                    <span class="pagination-info">
+                        Page {{ sales.number }} of {{ sales.paginator.num_pages }}
+                    </span>
+
+                    {% if sales.has_next %}
+                        <a href="?page={{ sales.next_page_number }}" class="pagination-btn">Next</a>
+                        <a href="?page={{ sales.paginator.num_pages }}" class="pagination-btn">Last</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="modern-alert modern-alert-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <div>You haven't uploaded any EC sales yet.</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Quick Actions</h3>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'ec_upload_select' %}" class="modern-btn modern-btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                Upload New EC
+            </a>
+            <a href="{% url 'ec_sales_report' %}" class="modern-btn modern-btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                </svg>
+                View Full Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card-modern {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    color: white;
+    transition: transform var(--transition-base);
+}
+
+.stats-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-card-modern.card-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-card-modern.card-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stats-card-modern.card-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-card-modern.card-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stats-icon {
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.95rem;
+    opacity: 0.95;
+    font-weight: 500;
+}
+
+/* Print Styles */
+@media print {
+    .modern-page-header,
+    .modern-breadcrumb,
+    .modern-btn,
+    .modern-pagination,
+    .stats-grid,
+    .card-header-modern > *:not(h3) {
+        display: none !important;
+    }
+
+    .modern-card {
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .modern-table {
+        font-size: 0.85rem;
+    }
+}
+</style>
+{% endblock %}

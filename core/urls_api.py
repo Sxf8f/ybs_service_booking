@@ -5,7 +5,6 @@ from .views_api import (
     LoginView,
     OperatorViewSet,
     RegisterView,
-    TechnicianViewSet,
     TypeOfServiceViewSet,
     UserListCreateView,
     UserRetrieveUpdateDestroyView,
@@ -22,6 +21,8 @@ from .views_api import (
 from django.urls import path
 
 urlpatterns = [
+
+    
     path("users/", UserListCreateView.as_view(), name="user-list-create"),
     path("users/<int:pk>/", UserRetrieveUpdateDestroyView.as_view(), name="user-detail"),
     path("register/", RegisterView.as_view(), name="register"),
@@ -52,7 +53,6 @@ router.register('roles', WorkFromTheRoleViewSet)
 router.register('materials', MaterialViewSet)
 
 
-router.register('technicians', TechnicianViewSet)
 router.register('works', WorkStbViewSet)
 router.register('users', UserViewSet)
 

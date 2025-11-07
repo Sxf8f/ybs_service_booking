@@ -1,0 +1,223 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Upload EC - Choose Method{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <!-- Page Header -->
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">Upload EC Recharge</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <a href="{% url 'ec_upload_select' %}">Upload EC</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>Choose Method</span>
+        </div>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+        <div class="step-item completed">
+            <div class="step-circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+            <div class="step-label">Select Hierarchy</div>
+        </div>
+        <div class="step-line completed"></div>
+        <div class="step-item active">
+            <div class="step-circle">2</div>
+            <div class="step-label">Upload Method</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-item">
+            <div class="step-circle">3</div>
+            <div class="step-label">Enter EC Data</div>
+        </div>
+    </div>
+
+    <!-- Selected Hierarchy Card -->
+    <div class="modern-card info-card">
+        <div class="card-header-modern">
+            <h3>Selected Hierarchy</h3>
+            <a href="{% url 'ec_upload_select' %}" class="modern-btn modern-btn-outline modern-btn-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Change
+            </a>
+        </div>
+        <div class="hierarchy-grid">
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">Operator</div>
+                <div class="modern-badge modern-badge-info">{{ operator.name }}</div>
+            </div>
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">Supervisor</div>
+                <div class="modern-badge modern-badge-secondary">{{ supervisor.get_full_name }}</div>
+            </div>
+            <div class="hierarchy-item">
+                <div class="hierarchy-label">FOS</div>
+                <div class="modern-badge modern-badge-primary">{{ fos.get_full_name }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Method Cards -->
+    <div class="method-cards-grid">
+        <div class="method-card" onclick="window.location='{% url 'ec_manual_entry' %}'">
+            <div class="method-card-icon primary">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h3 class="method-card-title">Manual Entry</h3>
+            <p class="method-card-description">
+                Enter EC recharge details one by one using a form. Suitable for small number of entries.
+            </p>
+            <ul class="feature-list">
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Enter one order at a time
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Search and select retailer
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Immediate validation
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Best for 1-10 entries
+                </li>
+            </ul>
+            <a href="{% url 'ec_manual_entry' %}" class="modern-btn modern-btn-primary modern-btn-block">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                Start Manual Entry
+            </a>
+        </div>
+
+        <div class="method-card" onclick="window.location='{% url 'ec_excel_upload' %}'">
+            <div class="method-card-icon success">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
+            <h3 class="method-card-title">Excel Upload</h3>
+            <p class="method-card-description">
+                Upload multiple EC recharge records from an Excel file. Fast for bulk uploads.
+            </p>
+            <ul class="feature-list">
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Upload multiple orders at once
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Automatic retailer matching
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Batch validation
+                </li>
+                <li>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Best for 10+ entries
+                </li>
+            </ul>
+            <a href="{% url 'ec_excel_upload' %}" class="modern-btn modern-btn-success modern-btn-block">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Start Excel Upload
+            </a>
+        </div>
+    </div>
+
+    <!-- Excel Format Info Card -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Excel File Format</h3>
+            <span class="modern-badge modern-badge-info">Required Format</span>
+        </div>
+        <p style="margin-bottom: 1rem; color: #6c757d;">Your Excel file should have the following columns:</p>
+        <div class="modern-table-container">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Order Date</th>
+                        <th>Partner ID</th>
+                        <th>Partner Name</th>
+                        <th>Transfer Amount</th>
+                        <th>Commission</th>
+                        <th>Amount Without Commission</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2567377108</td>
+                        <td>19.10.2025</td>
+                        <td>0660143354</td>
+                        <td>ALMAS MOBILES</td>
+                        <td>2060</td>
+                        <td>60</td>
+                        <td>2000</td>
+                    </tr>
+                    <tr>
+                        <td>2567377109</td>
+                        <td>19.10.2025</td>
+                        <td>0660143355</td>
+                        <td>DIGITAL WORLD</td>
+                        <td>3090</td>
+                        <td>90</td>
+                        <td>3000</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="modern-alert modern-alert-warning">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+                <strong>Important Note:</strong> Only retailers registered under the selected FOS will be accepted.
+                Partner Name must exactly match the retailer's name in the system.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

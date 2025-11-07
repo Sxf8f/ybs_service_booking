@@ -1,0 +1,323 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Upload EC - Select Hierarchy{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+.hierarchy-container {
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.step-indicator {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.step-indicator::before {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dee2e6;
+    z-index: -1;
+}
+
+.step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.step-circle {
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #dee2e6;
+    display: inline-block;
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.step.active .step-circle {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.step.completed .step-circle {
+    background: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.step.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.form-section {
+    background: #fff;
+    border-radius: 10px;
+    padding: 2rem;
+    box-shadow: 0 0 20px rgba(0,0,0,0.08);
+}
+
+.form-section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-select {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+}
+
+.form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-container {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.info-card {
+    background: #e7f3ff;
+    border-left: 4px solid #0d6efd;
+    padding: 1rem 1.25rem;
+    border-radius: 5px;
+    margin-bottom: 2rem;
+}
+
+.info-card i {
+    color: #0d6efd;
+}
+
+.required-star {
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hierarchy-container">
+    <!-- Step Indicator -->
+    <div class="step-indicator">
+        <div class="step active">
+            <div class="step-circle">1</div>
+            <div class="step-label">Select Hierarchy</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">2</div>
+            <div class="step-label">Choose Upload Method</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-label">Upload EC Data</div>
+        </div>
+    </div>
+
+    <!-- Info Card -->
+    <div class="info-card">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Upload Process:</strong> First select the Operator, then the Supervisor (Sales/Both), and finally the FOS who works with that operator.
+    </div>
+
+    <!-- Form Section -->
+    <div class="form-section">
+        <h2 class="form-section-title">
+            <i class="fas fa-sitemap me-2"></i>Select Upload Hierarchy
+        </h2>
+
+        <form method="post" id="hierarchyForm">
+            {% csrf_token %}
+
+            <!-- Operator Selection -->
+            <div class="form-group">
+                <label for="{{ form.operator.id_for_label }}" class="form-label">
+                    <i class="fas fa-building me-1"></i>
+                    Operator <span class="required-star">*</span>
+                </label>
+                {{ form.operator }}
+                {% if form.operator.errors %}
+                    <div class="invalid-feedback d-block">{{ form.operator.errors.0 }}</div>
+                {% endif %}
+                <small class="form-text text-muted">Select the telecom operator for this EC upload</small>
+            </div>
+
+            <!-- Supervisor Selection -->
+            <div class="form-group">
+                <label for="{{ form.supervisor.id_for_label }}" class="form-label">
+                    <i class="fas fa-user-tie me-1"></i>
+                    Supervisor (Sales/Both) <span class="required-star">*</span>
+                </label>
+                {{ form.supervisor }}
+                {% if form.supervisor.errors %}
+                    <div class="invalid-feedback d-block">{{ form.supervisor.errors.0 }}</div>
+                {% endif %}
+                <small class="form-text text-muted">Select the supervisor who manages sales for this operator</small>
+            </div>
+
+            <!-- FOS Selection -->
+            <div class="form-group">
+                <label for="{{ form.fos.id_for_label }}" class="form-label">
+                    <i class="fas fa-user-check me-1"></i>
+                    FOS <span class="required-star">*</span>
+                </label>
+                {{ form.fos }}
+                {% if form.fos.errors %}
+                    <div class="invalid-feedback d-block">{{ form.fos.errors.0 }}</div>
+                {% endif %}
+                <small class="form-text text-muted">Select the FOS under the selected supervisor with this operator</small>
+                <div id="fosLoading" class="text-muted mt-2" style="display: none;">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Loading FOS list...
+                </div>
+                <div id="fosError" class="text-danger mt-2" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <span id="fosErrorMessage"></span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="btn-container">
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </a>
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                    <i class="fas fa-arrow-right me-1"></i> Next Step
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Help Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i>Need Help?</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Upload Hierarchy Explanation:</strong></p>
+            <ul class="mb-0">
+                <li><strong>Operator:</strong> The telecom company (e.g., Jio, Airtel, VI)</li>
+                <li><strong>Supervisor:</strong> The supervisor who manages sales activities</li>
+                <li><strong>FOS:</strong> Field Officer Sales who works with retailers and has the selected operator assigned</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const operatorSelect = document.getElementById('{{ form.operator.id_for_label }}');
+    const supervisorSelect = document.getElementById('{{ form.supervisor.id_for_label }}');
+    const fosSelect = document.getElementById('{{ form.fos.id_for_label }}');
+    const fosLoading = document.getElementById('fosLoading');
+    const fosError = document.getElementById('fosError');
+    const fosErrorMessage = document.getElementById('fosErrorMessage');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // Function to update FOS list based on operator and supervisor
+    function updateFosList() {
+        const operatorId = operatorSelect.value;
+        const supervisorId = supervisorSelect.value;
+
+        if (!operatorId || !supervisorId) {
+            // Reset FOS select if either operator or supervisor is not selected
+            fosSelect.innerHTML = '<option value="">---------</option>';
+            fosSelect.disabled = true;
+            return;
+        }
+
+        // Show loading indicator
+        fosLoading.style.display = 'block';
+        fosError.style.display = 'none';
+        fosSelect.disabled = true;
+
+        // Fetch FOS list
+        fetch(`{% url 'ec_get_fos' %}?operator_id=${operatorId}&supervisor_id=${supervisorId}`)
+            .then(response => response.json())
+            .then(data => {
+                fosLoading.style.display = 'none';
+
+                // Clear existing options
+                fosSelect.innerHTML = '<option value="">---------</option>';
+
+                if (data.fos_list && data.fos_list.length > 0) {
+                    // Add FOS options
+                    data.fos_list.forEach(fos => {
+                        const option = document.createElement('option');
+                        option.value = fos.id;
+                        option.textContent = fos.name;
+                        fosSelect.appendChild(option);
+                    });
+                    fosSelect.disabled = false;
+                } else {
+                    // No FOS found
+                    fosError.style.display = 'block';
+                    fosErrorMessage.textContent = 'No FOS found with this operator under the selected supervisor. Please check operator assignments.';
+                    fosSelect.disabled = true;
+                }
+            })
+            .catch(error => {
+                fosLoading.style.display = 'none';
+                fosError.style.display = 'block';
+                fosErrorMessage.textContent = 'Error loading FOS list. Please try again.';
+                console.error('Error:', error);
+            });
+    }
+
+    // Add event listeners
+    operatorSelect.addEventListener('change', updateFosList);
+    supervisorSelect.addEventListener('change', updateFosList);
+
+    // Disable FOS select initially
+    fosSelect.disabled = true;
+
+    // Form validation
+    document.getElementById('hierarchyForm').addEventListener('submit', function(e) {
+        if (!operatorSelect.value || !supervisorSelect.value || !fosSelect.value) {
+            e.preventDefault();
+            alert('Please select Operator, Supervisor, and FOS before proceeding.');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %}

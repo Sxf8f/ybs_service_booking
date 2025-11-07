@@ -1,0 +1,116 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Pending Transfers{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="mb-3">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-sm">← Back to Dashboard</a>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header bg-warning text-dark">
+      <h4 class="mb-0">Pending Transfer Requests</h4>
+    </div>
+    <div class="card-body">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-{% if message.tags == 'success' %}success{% elif message.tags == 'error' %}danger{% elif message.tags == 'info' %}info{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      {% if pending_transfers %}
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>From</th>
+                <th>Amount</th>
+                <th>Remark</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for transfer in pending_transfers %}
+                <tr>
+                  <td>{{ forloop.counter }}</td>
+                  <td>
+                    <strong>{{ transfer.technician.name }}</strong><br>
+                    <small class="text-muted">{{ transfer.technician.email }}</small>
+                  </td>
+                  <td><strong class="text-success">₹{{ transfer.amount|floatformat:2 }}</strong></td>
+                  <td>{{ transfer.remark|default:"-" }}</td>
+                  <td>{{ transfer.created_at|date:"d M Y, H:i" }}</td>
+                  <td>
+                    <a href="{% url 'transfer_action' transfer.id 'accept' %}"
+                       class="btn btn-sm btn-success"
+                       onclick="return confirm('Accept transfer of ₹{{ transfer.amount }} from {{ transfer.technician.name }}?')">
+                      ✓ Accept
+                    </a>
+                    <a href="{% url 'transfer_action' transfer.id 'reject' %}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Reject transfer of ₹{{ transfer.amount }} from {{ transfer.technician.name }}?')">
+                      ✗ Reject
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info">
+          No pending transfer requests at the moment.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Transfers -->
+  <div class="card">
+    <div class="card-header bg-light">
+      <h5 class="mb-0">Recent Transfer History</h5>
+    </div>
+    <div class="card-body">
+      {% if recent_transfers %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>From</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for transfer in recent_transfers %}
+                <tr>
+                  <td>{{ transfer.technician.name }}</td>
+                  <td>₹{{ transfer.amount|floatformat:2 }}</td>
+                  <td>
+                    {% if transfer.status == 'Accepted' %}
+                      <span class="badge bg-success">{{ transfer.status }}</span>
+                    {% elif transfer.status == 'Rejected' %}
+                      <span class="badge bg-danger">{{ transfer.status }}</span>
+                    {% else %}
+                      <span class="badge bg-warning">{{ transfer.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ transfer.updated_at|date:"d M Y" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">No recent transfers.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

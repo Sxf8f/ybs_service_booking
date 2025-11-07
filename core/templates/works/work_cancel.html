@@ -1,0 +1,138 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Cancel Work{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Cancel Work</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'work_list' %}">Works</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Cancel</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern" style="background:#dc2626; color:#fff;">
+      <h3>Cancel Work</h3>
+    </div>
+    <div style="padding:1.5rem;">
+      <section class="modern-section">
+        <header class="section-header">
+          <h4>Work Summary</h4>
+        </header>
+        <div class="work-summary-grid">
+          <div>
+            <div class="summary-label">Customer</div>
+            <div class="summary-value">{{ work.customer_name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Mobile</div>
+            <div class="summary-value">{{ work.mobile_no }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Pincode</div>
+            <div class="summary-value">{{ work.pincode }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Operator</div>
+            <div class="summary-value">{{ work.operator.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Service</div>
+            <div class="summary-value">{{ work.type_of_service.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Work From</div>
+            <div class="summary-value">{{ work.work_from.name }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Category</div>
+            <div class="summary-value">{{ work.get_category_display }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Job Type</div>
+            <div class="summary-value">{{ work.get_job_type_display }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Amount</div>
+            <div class="summary-value">₹{{ work.amount }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Deadline</div>
+            <div class="summary-value">{{ work.work_deadline_time|date:"Y-m-d H:i" }}</div>
+          </div>
+          <div>
+            <div class="summary-label">Status</div>
+            <div class="summary-value">
+              {% if work.status == 'Pending' %}
+                <span class="modern-badge modern-badge-warning">Pending</span>
+              {% elif work.status == 'Expired' %}
+                <span class="modern-badge modern-badge-danger">Expired</span>
+              {% else %}
+                {{ work.status }}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {% if work.assigned_technician %}
+      <div class="modern-alert modern-alert-info" style="margin-bottom:1.25rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div><strong>Assigned Technician:</strong> {{ work.assigned_technician.name }} ({{ work.assigned_technician.phone }})</div>
+      </div>
+      {% endif %}
+
+      <div class="modern-alert modern-alert-danger" style="margin-bottom:1.5rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div><strong>Warning:</strong> Cancelling this work cannot be undone. Please provide a reason to keep the audit trail clear.</div>
+      </div>
+
+      <form method="post" class="modern-form" novalidate>
+        {% csrf_token %}
+        <div class="modern-form-grid">
+          <div class="modern-form-group wide">
+            <label class="modern-label" for="cancellation_reason">Cancellation Reason *</label>
+            <textarea name="cancellation_reason" id="cancellation_reason" rows="5" class="modern-input" required placeholder="Enter the reason for cancelling this work..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <a href="{% url 'work_list' %}" class="modern-btn modern-btn-outline">Go Back</a>
+          <button type="submit" class="modern-btn" style="background:#dc2626;color:#fff;">Confirm Cancellation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.work-summary-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem; padding:1rem 1.25rem; background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.18); border-radius:10px; }
+.summary-label { font-size:0.75rem; letter-spacing:0.05em; text-transform:uppercase; color:#718096; }
+.summary-value { font-size:0.95rem; font-weight:600; color:#2d3748; }
+.modern-form-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:1.25rem; }
+.modern-form-group { display:flex; flex-direction:column; gap:0.4rem; }
+.modern-form-group.wide { grid-column:1 / -1; }
+.modern-label { font-weight:600; color:#4a5568; font-size:0.9rem; }
+.modern-input { border:1px solid #cbd5f5; border-radius:8px; padding:0.7rem 0.85rem; font-size:0.95rem; transition:border-color 0.2s ease, box-shadow 0.2s ease; background:#fff; }
+.modern-input:focus { outline:none; border-color:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,0.18); }
+.form-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+.modern-btn-outline { background:white; color:#667eea; border:2px solid #667eea; }
+.modern-btn-outline:hover { background:#eef2ff; }
+.section-header { margin-bottom:1rem; }
+.section-header h4 { margin:0; font-size:1.05rem; font-weight:600; color:#2d3748; }
+</style>
+{% endblock %}

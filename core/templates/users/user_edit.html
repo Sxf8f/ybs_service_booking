@@ -1,0 +1,130 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card">
+    <div class="card-header bg-primary text-white"><strong>{{ title }}</strong></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="name" class="form-label"><strong>Name:</strong></label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ user_obj.name }}" required>
+          </div>
+
+          <div class="col-md-6">
+            <label for="email" class="form-label"><strong>Email:</strong></label>
+            <input type="email" class="form-control" id="email" name="email" value="{{ user_obj.email }}" required>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <label for="phone" class="form-label"><strong>Phone:</strong></label>
+            <input type="text" class="form-control" id="phone" name="phone" value="{{ user_obj.phone }}" required>
+          </div>
+
+          <div class="col-md-4">
+            <label for="alternate_no" class="form-label">Alternate No:</label>
+            <input type="text" class="form-control" id="alternate_no" name="alternate_no" value="{{ user_obj.alternate_no|default:'' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label for="whatsapp_no" class="form-label">WhatsApp No:</label>
+            <input type="text" class="form-control" id="whatsapp_no" name="whatsapp_no" value="{{ user_obj.whatsapp_no|default:'' }}">
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-8">
+            <label for="address" class="form-label">Address:</label>
+            <textarea class="form-control" id="address" name="address" rows="2">{{ user_obj.address|default:'' }}</textarea>
+          </div>
+
+          <div class="col-md-4">
+            <label for="pincode" class="form-label">Pincode:</label>
+            <input type="text" class="form-control" id="pincode" name="pincode" value="{{ user_obj.pincode|default:'' }}">
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="password" class="form-label">Password:</label>
+            <input type="text" class="form-control" id="password" name="password" placeholder="Leave blank to keep current">
+            <small class="text-muted">Only enter if you want to change the password</small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Status:</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="is_active" name="is_active" {% if user_obj.is_active %}checked{% endif %}>
+              <label class="form-check-label" for="is_active">
+                Active User
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="remark" class="form-label">Remark:</label>
+          <textarea class="form-control" id="remark" name="remark" rows="3">{{ user_obj.remark|default:'' }}</textarea>
+        </div>
+
+        {% if user_obj.role == 'fos' %}
+        <div class="mb-3">
+          <label class="form-label"><strong>Operators:</strong></label>
+          <div class="card">
+            <div class="card-body">
+              <p class="text-muted small">Select the operators this FOS works with:</p>
+              {% for operator in operators %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="operators" value="{{ operator.id }}"
+                         id="operator_{{ operator.id }}"
+                         {% if operator.id in current_operators %}checked{% endif %}>
+                  <label class="form-check-label" for="operator_{{ operator.id }}">
+                    {{ operator.name }}
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="alert alert-info">
+          <strong>User Info:</strong><br>
+          Role: <strong>{{ user_obj.get_role_display }}</strong><br>
+          {% if user_obj.technician_type %}
+            Technician Type: <strong>{{ user_obj.get_technician_type_display }}</strong><br>
+          {% endif %}
+          {% if user_obj.supervisor %}
+            Supervisor: <strong>{{ user_obj.supervisor.name }}</strong><br>
+          {% endif %}
+          {% if user_obj.role == 'fos' and user_obj.fosoperatormap_set.all %}
+            Current Operators:
+            {% for op in user_obj.fosoperatormap_set.all %}
+              <span class="badge bg-info text-dark">{{ op.operator.name }}</span>
+            {% endfor %}
+            <br>
+          {% endif %}
+          Collection Amount: <strong>₹{{ user_obj.collection_amount }}</strong><br>
+          {% if user_obj.technician_type == 'freelance' %}
+            Payment Wallet: <strong>₹{{ user_obj.payment_wallet }}</strong><br>
+          {% endif %}
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'user_list' %}" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Update User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>{{ title }}</h2>
+        <a href="{% url 'pincode_assignment_list' %}" class="btn btn-secondary">⬅ Back to Assignments</a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">🔗 Assign Pincodes to Supervisor</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label for="{{ form.supervisor.id_for_label }}" class="form-label">Select Supervisor *</label>
+                                {{ form.supervisor }}
+                                {% if form.supervisor.errors %}
+                                    <div class="text-danger">{{ form.supervisor.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label class="form-label">Select Pincodes to Assign *</label>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Note:</strong> You can select multiple pincodes. Each pincode can only be assigned to one supervisor.
+                                </div>
+                                
+                                <div class="row">
+                                    {% for pincode in form.pincodes %}
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <div class="form-check">
+                                                    {{ pincode.tag }}
+                                                    <label class="form-check-label" for="{{ pincode.id_for_label }}">
+                                                        <strong>{{ pincode.choice_label }}</strong>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                {% if form.pincodes.errors %}
+                                    <div class="text-danger">{{ form.pincodes.errors.0 }}</div>
+                                {% endif %}
+                                
+                                {% if form.non_field_errors %}
+                                    <div class="alert alert-danger">
+                                        {% for error in form.non_field_errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'pincode_assignment_list' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">🔗 Assign Pincodes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

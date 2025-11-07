@@ -1,0 +1,352 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}My EC Collection History{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <!-- Page Header -->
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">My EC Collection History</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>EC Collection History</span>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    {% if summary %}
+        <div class="stats-grid">
+            <div class="stats-card-modern card-success">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <div class="stats-value">{{ summary.total_collections }}</div>
+                <div class="stats-label">Total Collections</div>
+            </div>
+
+            <div class="stats-card-modern card-primary">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                        <line x1="1" y1="10" x2="23" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="stats-value">₹{{ summary.total_amount|floatformat:0 }}</div>
+                <div class="stats-label">Total Amount Collected</div>
+            </div>
+
+            <div class="stats-card-modern card-info">
+                <div class="stats-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                </div>
+                <div class="stats-value">{{ summary.this_month_collections }}</div>
+                <div class="stats-label">This Month's Collections</div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Collection History Table -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>My Collection History</h3>
+            {% if collections %}
+                <button onclick="window.print()" class="modern-btn modern-btn-sm modern-btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print
+                </button>
+            {% endif %}
+        </div>
+
+        {% if collections %}
+            <div class="modern-table-container" style="overflow-x: auto; width: 100%;">
+                <table class="modern-table" style="width: 100%; table-layout: auto;">
+                    <thead>
+                        <tr>
+                            <th>Collection Date</th>
+                            <th>Collection Level</th>
+                            <th>Operator</th>
+                            <th>Collected From</th>
+                            <th>Collected To</th>
+                            <th style="text-align: right;">Pending Before</th>
+                            <th style="text-align: right;">Collection Amount</th>
+                            <th style="text-align: right;">Pending After</th>
+                            <th>Remarks</th>
+                            <th>Recorded At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for collection in collections %}
+                            <tr>
+                                <td>{{ collection.collection_date|date:"d/m/Y" }}</td>
+                                <td>
+                                    <span class="modern-badge modern-badge-primary">
+                                        {{ collection.get_collection_level_display }}
+                                    </span>
+                                </td>
+                                <td><span class="modern-badge modern-badge-info">{{ collection.operator.name }}</span></td>
+                                <td>
+                                    <strong>{{ collection.from_user.name }}</strong>
+                                    <br>
+                                    <small style="color: #6c757d;">{{ collection.from_user.get_role_display }}</small>
+                                </td>
+                                <td>
+                                    <strong>{{ collection.to_user.name }}</strong>
+                                    <br>
+                                    <small style="color: #6c757d;">{{ collection.to_user.get_role_display }}</small>
+                                </td>
+                                <td style="text-align: right; color: var(--danger-color);">
+                                    ₹{{ collection.pending_before|floatformat:2 }}
+                                </td>
+                                <td style="text-align: right; font-weight: 600; color: var(--success-color);">
+                                    ₹{{ collection.collection_amount|floatformat:2 }}
+                                </td>
+                                <td style="text-align: right; color: var(--warning-color);">
+                                    ₹{{ collection.pending_after|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {% if collection.remarks %}
+                                        <small>{{ collection.remarks|truncatewords:10 }}</small>
+                                    {% else %}
+                                        <span style="color: #6c757d;">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ collection.created_at|date:"d/m/Y" }}
+                                    <br>
+                                    <small style="color: #6c757d;">{{ collection.created_at|date:"H:i" }}</small>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background-color: #f8f9fa; font-weight: 600;">
+                            <td colspan="6" style="text-align: right;">Page Total:</td>
+                            <td style="text-align: right; color: var(--success-color);">₹{{ page_total|floatformat:2 }}</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if collections.has_other_pages %}
+                <div class="modern-pagination">
+                    {% if collections.has_previous %}
+                        <a href="?page=1" class="pagination-btn">First</a>
+                        <a href="?page={{ collections.previous_page_number }}" class="pagination-btn">Previous</a>
+                    {% endif %}
+
+                    <span class="pagination-info">
+                        Page {{ collections.number }} of {{ collections.paginator.num_pages }}
+                    </span>
+
+                    {% if collections.has_next %}
+                        <a href="?page={{ collections.next_page_number }}" class="pagination-btn">Next</a>
+                        <a href="?page={{ collections.paginator.num_pages }}" class="pagination-btn">Last</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="modern-alert modern-alert-info">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                <div>You haven't recorded any EC collections yet.</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Collection Breakdown by Level -->
+    {% if level_breakdown %}
+        <div class="modern-card">
+            <div class="card-header-modern">
+                <h3>Collection Breakdown by Level</h3>
+                <span class="modern-badge modern-badge-info">Summary</span>
+            </div>
+            <div class="breakdown-grid">
+                {% for level in level_breakdown %}
+                    <div class="breakdown-card level-{{ forloop.counter }}">
+                        <div class="breakdown-level">{{ level.get_collection_level_display }}</div>
+                        <div class="breakdown-amount">₹{{ level.total|floatformat:2 }}</div>
+                        <div class="breakdown-count">{{ level.count }} collections</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Quick Actions -->
+    <div class="modern-card">
+        <div class="card-header-modern">
+            <h3>Quick Actions</h3>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <a href="{% url 'ec_collect_from_retailer' %}" class="modern-btn modern-btn-success">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Record New Collection
+            </a>
+            <a href="{% url 'ec_pending_collections' %}" class="modern-btn modern-btn-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                Pending Collections
+            </a>
+            <a href="{% url 'ec_collection_report' %}" class="modern-btn modern-btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                </svg>
+                View Full Report
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stats-card-modern {
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    color: white;
+    transition: transform var(--transition-base);
+}
+
+.stats-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-card-modern.card-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+}
+
+.stats-card-modern.card-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-card-modern.card-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stats-icon {
+    margin-bottom: 0.75rem;
+    opacity: 0.9;
+}
+
+.stats-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 0.95rem;
+    opacity: 0.95;
+    font-weight: 500;
+}
+
+/* Breakdown Grid */
+.breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.breakdown-card {
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-base);
+}
+
+.breakdown-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.breakdown-card.level-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.breakdown-card.level-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.breakdown-card.level-3 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.breakdown-level {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.breakdown-amount {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.breakdown-count {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Print Styles */
+@media print {
+    .modern-page-header,
+    .modern-breadcrumb,
+    .modern-btn,
+    .modern-pagination,
+    .stats-grid,
+    .breakdown-grid,
+    .card-header-modern > *:not(h3) {
+        display: none !important;
+    }
+
+    .modern-card {
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .modern-table {
+        font-size: 0.85rem;
+    }
+}
+</style>
+{% endblock %}

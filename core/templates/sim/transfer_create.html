@@ -1,0 +1,78 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Transfer SIM Cards{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Transfer SIM Cards</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'sim_stock_list' %}">SIM Stock</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Transfer</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Transfer SIM Cards</h3>
+      <span class="modern-badge modern-badge-primary">New Transfer</span>
+    </div>
+
+    <div style="padding: 1.5rem;">
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>
+          <strong>Note:</strong> Enter the serial numbers of SIM cards you want to transfer, one per line.
+          The recipient will need to accept the transfer before the SIM cards are moved.
+        </div>
+      </div>
+
+      <form method="post" style="margin-top: 1.5rem;">
+        {% csrf_token %}
+
+        <div class="modern-form-group">
+          <label class="modern-label" for="id_to_user">Transfer To:</label>
+          {{ form.to_user }}
+          {% if form.to_user.errors %}
+            <small style="color: #f44336;">{{ form.to_user.errors|first }}</small>
+          {% endif %}
+        </div>
+
+        <div class="modern-form-group" style="margin-top: 1rem;">
+          <label class="modern-label" for="id_serial_numbers">Serial Numbers:</label>
+          {{ form.serial_numbers }}
+          <small style="color: #666; font-size: 0.85rem;">{{ form.serial_numbers.help_text }}</small>
+          {% if form.serial_numbers.errors %}
+            <small style="color: #f44336;">{{ form.serial_numbers.errors|first }}</small>
+          {% endif %}
+        </div>
+
+        <div class="modern-form-group" style="margin-top: 1rem;">
+          <label class="modern-label" for="id_remark">Remark (optional):</label>
+          {{ form.remark }}
+          {% if form.remark.errors %}
+            <small style="color: #f44336;">{{ form.remark.errors|first }}</small>
+          {% endif %}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+          <a href="{% url 'sim_stock_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn modern-btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <polyline points="19 12 12 19 5 12"></polyline>
+            </svg>
+            Transfer SIM Cards
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

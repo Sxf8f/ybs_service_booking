@@ -1,0 +1,183 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Works{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Work Queue</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Works</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>Work Orders</h3>
+      {% if user.role == 'admin' or user.role == 'supervisor' %}
+        <a href="{% url 'work_add' %}" class="modern-btn modern-btn-primary modern-btn-sm">New Work</a>
+      {% endif %}
+    </div>
+    <div style="padding: 1.5rem;">
+      {% if messages %}
+      <div class="message-stack">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if works %}
+      <div class="modern-table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Operator</th>
+              <th>Kind</th>
+              <th>Category</th>
+              <th>Job</th>
+              <th>Supervisor</th>
+              <th>Technician</th>
+              <th>Status</th>
+              <th>Deadline</th>
+              <th>Time Remaining</th>
+              <th>Created</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in works %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>
+                <strong>{{ w.customer_name }}</strong>
+                <div class="subtext">{{ w.mobile_no }}</div>
+                <div class="subtext">#{{ w.id }}</div>
+              </td>
+              <td>{{ w.operator.name }}</td>
+              <td>{{ w.get_kind_display }}</td>
+              <td>{{ w.get_category_display }}</td>
+              <td>{{ w.get_job_type_display }}</td>
+              <td>{% if w.supervisor %}{{ w.supervisor.name }}{% else %}<span class="subtext">-</span>{% endif %}</td>
+              <td>{% if w.assigned_technician %}{{ w.assigned_technician.name }}{% else %}<span class="subtext">Unassigned</span>{% endif %}</td>
+              <td>
+                {% if w.status == 'Pending' %}
+                  <span class="modern-badge modern-badge-warning">Pending</span>
+                {% elif w.status == 'Expired' %}
+                  <span class="modern-badge modern-badge-danger">Expired</span>
+                {% elif w.status == 'Closed' %}
+                  <span class="modern-badge modern-badge-success">Closed</span>
+                {% elif w.status == 'Cancelled' %}
+                  <span class="modern-badge modern-badge-info">Cancelled</span>
+                {% else %}
+                  {{ w.status }}
+                {% endif %}
+              </td>
+              <td>{% if w.work_deadline_time %}{{ w.work_deadline_time|date:"Y-m-d H:i" }}{% else %}<span class="subtext">Not set</span>{% endif %}</td>
+              <td>
+                {% if w.work_deadline_time and w.status in 'Pending,Expired' %}
+                  <span class="countdown-timer" data-deadline="{{ w.work_deadline_time|date:'c' }}"></span>
+                {% else %}
+                  <span class="subtext">-</span>
+                {% endif %}
+              </td>
+              <td>{{ w.created_at|date:"Y-m-d H:i" }}</td>
+              <td style="text-align:right; white-space:nowrap;">
+                {% if w.status == 'Pending' or w.status == 'Expired' %}
+                  {% if user.role == 'admin' %}
+                    <a href="{% url 'work_edit' w.id %}" class="modern-link">Edit</a>
+                  {% endif %}
+
+                  {% if not w.assigned_technician %}
+                    <a href="{% url 'work_assign' w.id %}" class="modern-link">Assign</a>
+                  {% else %}
+                    {% if user.role == 'admin' or user.role == 'supervisor' %}
+                      <a href="{% url 'work_reassign' w.id %}" class="modern-link">Reassign</a>
+                      <a href="{% url 'work_close' w.id %}" class="modern-link">Close</a>
+                    {% endif %}
+                  {% endif %}
+
+                  {% if user.role == 'admin' or user.role == 'supervisor' %}
+                    <a href="{% url 'work_cancel' w.id %}" class="modern-link danger">Cancel</a>
+                  {% endif %}
+                {% else %}
+                  <a href="{% url 'work_report' w.id %}" class="modern-link">View Report</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No works found.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack { margin-bottom: 1.5rem; display:flex; flex-direction:column; gap:0.75rem; }
+.message { padding:1rem 1.25rem; border-radius:8px; border-left:4px solid #667eea; background:rgba(102,126,234,0.12); color:#2d3748; font-size:0.95rem; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.message-success { border-left-color:#38a169; background:rgba(56,161,105,0.12); color:#276749; }
+.message-error, .message-danger { border-left-color:#e53e3e; background:rgba(229,62,62,0.12); color:#9b2c2c; }
+.message-warning { border-left-color:#d69e2e; background:rgba(214,158,46,0.15); color:#975a16; }
+.subtext { font-size:0.78rem; color:#718096; }
+.modern-link { margin-left:0.5rem; color:#6366f1; font-weight:600; font-size:0.85rem; }
+.modern-link:first-child { margin-left:0; }
+.modern-link:hover { text-decoration:underline; }
+.modern-link.danger { color:#f56565; }
+</style>
+
+<script>
+function updateCountdowns() {
+  const timers = document.querySelectorAll('.countdown-timer');
+  const now = new Date();
+
+  timers.forEach(timer => {
+    const deadline = new Date(timer.getAttribute('data-deadline'));
+    const diff = deadline - now;
+
+    if (diff <= 0) {
+      const hours = Math.floor(Math.abs(diff) / (1000 * 60 * 60));
+      const minutes = Math.floor((Math.abs(diff) % (1000 * 60 * 60)) / (1000 * 60));
+      timer.innerHTML = `<span class="text-danger"><strong>Expired ${hours}h ${minutes}m ago</strong></span>`;
+    } else {
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      let timeStr = '';
+      if (days > 0) {
+        timeStr = `${days}d ${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        timeStr = `${hours}h ${minutes}m`;
+      } else {
+        timeStr = `${minutes}m`;
+      }
+
+      if (diff < 2 * 60 * 60 * 1000) {
+        timer.innerHTML = `<span class="text-danger"><strong>${timeStr} left</strong></span>`;
+      } else if (diff < 6 * 60 * 60 * 1000) {
+        timer.innerHTML = `<span class="text-warning"><strong>${timeStr} left</strong></span>`;
+      } else {
+        timer.innerHTML = `<span class="text-success">${timeStr} left</span>`;
+      }
+    }
+  });
+}
+
+updateCountdowns();
+setInterval(updateCountdowns, 60000);
+</script>
+{% endblock %}

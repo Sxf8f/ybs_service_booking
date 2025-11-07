@@ -3,7 +3,7 @@ import requests
 from rest_framework import generics, filters
 from rest_framework import viewsets
 from rest_framework.views import APIView
-from .models import CollectionTransfer, Operator, Technician, TypeOfService, WorkFromTheRole, Material, WorkReport, WorkStb
+from .models import CollectionTransfer, Operator, TypeOfService, WorkFromTheRole, Material, WorkReport, WorkStb
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.contrib.auth.hashers import check_password
@@ -16,7 +16,6 @@ from rest_framework import status
 from django.db.models import Q
 from .serializers import (
     OperatorSerializer,
-    TechnicianSerializer,
     TypeOfServiceSerializer,
     WorkFromTheRoleSerializer,
     MaterialSerializer,
@@ -40,14 +39,16 @@ class LoginView(APIView):
                 Q(email=identifier) | Q(phone=identifier) | Q(name__iexact=identifier)
             ).first()
 
-            if user and user.check_password(password):
+            if user and user.password == password:
+
                 return Response({
                     "id": user.id,
                     "name": user.name,
                     "email": user.email,
                     "phone": user.phone,
                     "alternate_no": user.alternate_no,
-                    "whatsapp_no": user.whatsapp_no,
+                    "whatsapp_no": user.whatsapp_no, 
+                    "password": user.password, 
                     "address": user.address,
                     "pincode": user.pincode,
                     "remark": user.remark,
@@ -113,7 +114,6 @@ class CollectionTransferListCreateView(generics.ListCreateAPIView):
     queryset = CollectionTransfer.objects.all().order_by("-id")
     serializer_class = CollectionTransferSerializer
 
-
 # Accept or Reject transfer (Supervisor action)
 class CollectionTransferActionView(APIView):
     def post(self, request, pk):
@@ -146,9 +146,7 @@ class CollectionTransferActionView(APIView):
 
 
 
-class TechnicianViewSet(viewsets.ModelViewSet):
-    queryset = Technician.objects.all()
-    serializer_class = TechnicianSerializer
+
 
 class WorkStbViewSet(viewsets.ModelViewSet):
     queryset = WorkStb.objects.all().order_by("-id")

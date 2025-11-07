@@ -1,0 +1,101 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}Stock Overview{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Stock Overview</h2>
+    <div>
+      {% if scope == 'admin' %}
+        <a href="{% url 'transfer_stock_to_supervisor' %}" class="btn btn-primary">Transfer to Supervisor</a>
+      {% elif scope == 'supervisor' %}
+        <a href="{% url 'transfer_stock_to_technician' %}" class="btn btn-primary">Transfer to Technician</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white"><strong>{% if scope == 'admin' %}Global{% elif scope == 'supervisor' %}Supervisor{% else %}Technician{% endif %} View</strong></div>
+    <div class="card-body p-0">
+      {% if scope == 'admin' %}
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Company Qty</th>
+              <th>Supervisors Qty</th>
+              <th>Technicians Qty</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ r.product.name }}</td>
+                <td>{{ r.admin_qty|default:0 }}</td>
+                <td>{{ r.sup_qty|default:0 }}</td>
+                <td>{{ r.tech_qty|default:0 }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_role_detail' 'supervisor' r.product.id %}">View Supervisors</a>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_role_detail' 'technician' r.product.id %}">View Technicians</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% elif scope == 'supervisor' %}
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>My Qty</th>
+              <th>Technicians Qty</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ r.product.name }}</td>
+                <td>{{ r.my_qty|default:0 }}</td>
+                <td>{{ r.tech_qty|default:0 }}</td>
+                <td>
+                  <a class="btn btn-sm btn-outline-secondary" href="{% url 'stock_supervisor_detail' r.product.id %}">View My Technicians</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Product</th>
+              <th>Qty</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in stocks %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ s.product.name }}</td>
+                <td>{{ s.qty }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="text-center">No stock</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

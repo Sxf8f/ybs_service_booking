@@ -1,0 +1,302 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+
+{% block title %}Pending EC Collections{% endblock %}
+
+{% block content %}
+<div class="modern-container">
+    <!-- Page Header -->
+    <div class="modern-page-header">
+        <h1 class="modern-page-title">Pending EC Collections</h1>
+        <div class="modern-breadcrumb">
+            <a href="{% url 'dashboard' %}">Dashboard</a>
+            <span class="breadcrumb-separator">/</span>
+            <span>Pending Collections</span>
+        </div>
+    </div>
+
+    <!-- Retailer Pending Collections (For FOS) -->
+    {% if user.role == 'fos' %}
+        <div class="modern-card">
+            <div class="card-header-modern">
+                <h3>Retailers Pending Collections</h3>
+                <span class="modern-badge modern-badge-warning">{{ retailer_wallets|length }} Retailers</span>
+            </div>
+            {% if retailer_wallets %}
+                <div class="modern-table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Retailer</th>
+                                <th>Operator</th>
+                                <th style="text-align: right;">Total Sales</th>
+                                <th style="text-align: right;">Pending Amount</th>
+                                <th style="text-align: center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for wallet in retailer_wallets %}
+                                <tr>
+                                    <td>{{ wallet.retailer.name }}</td>
+                                    <td><span class="modern-badge modern-badge-info">{{ wallet.operator.name }}</span></td>
+                                    <td style="text-align: right;">₹{{ wallet.total_sales|floatformat:2 }}</td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--danger-color);">
+                                        ₹{{ wallet.pending_amount|floatformat:2 }}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <a href="{% url 'ec_collect_from_retailer' %}" class="modern-btn modern-btn-sm modern-btn-success">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                            </svg>
+                                            Collect
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #f8f9fa; font-weight: 600;">
+                                <td colspan="3" style="text-align: right;">Total Pending:</td>
+                                <td colspan="2" style="text-align: right; color: var(--danger-color);">₹{{ total_pending|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="modern-alert modern-alert-success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div>No pending collections from retailers. Great work!</div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- FOS Pending Collections (For Supervisor) -->
+    {% if user.role == 'supervisor' %}
+        <div class="modern-card">
+            <div class="card-header-modern">
+                <h3>FOS Pending Collections</h3>
+                <span class="modern-badge modern-badge-warning">{{ fos_pending|length }} FOS</span>
+            </div>
+            {% if fos_pending %}
+                <div class="modern-table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>FOS</th>
+                                <th>Operator</th>
+                                <th style="text-align: right;">Pending Amount</th>
+                                <th style="text-align: center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in fos_pending %}
+                                <tr>
+                                    <td>{{ item.fos_name }}</td>
+                                    <td><span class="modern-badge modern-badge-info">{{ item.operator_name }}</span></td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--danger-color);">
+                                        ₹{{ item.pending|floatformat:2 }}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <a href="{% url 'ec_collect_from_retailer' %}" class="modern-btn modern-btn-sm modern-btn-success">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                            </svg>
+                                            Collect
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #f8f9fa; font-weight: 600;">
+                                <td colspan="2" style="text-align: right;">Total Pending:</td>
+                                <td colspan="2" style="text-align: right; color: var(--danger-color);">₹{{ total_pending|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="modern-alert modern-alert-success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div>No pending collections from FOS. Excellent!</div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <!-- Supervisor Pending Collections (For Admin) -->
+    {% if user.role == 'admin' %}
+        <div class="modern-card">
+            <div class="card-header-modern">
+                <h3>Supervisor Pending Collections</h3>
+                <span class="modern-badge modern-badge-warning">{{ supervisor_pending|length }} Supervisors</span>
+            </div>
+            {% if supervisor_pending %}
+                <div class="modern-table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Supervisor</th>
+                                <th>Operator</th>
+                                <th style="text-align: right;">Pending Amount</th>
+                                <th style="text-align: center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in supervisor_pending %}
+                                <tr>
+                                    <td>{{ item.supervisor_name }}</td>
+                                    <td><span class="modern-badge modern-badge-info">{{ item.operator_name }}</span></td>
+                                    <td style="text-align: right; font-weight: 600; color: var(--danger-color);">
+                                        ₹{{ item.pending|floatformat:2 }}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <a href="{% url 'ec_collect_from_retailer' %}" class="modern-btn modern-btn-sm modern-btn-success">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="1" x2="12" y2="23"></line>
+                                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                            </svg>
+                                            Collect
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #f8f9fa; font-weight: 600;">
+                                <td colspan="2" style="text-align: right;">Total Pending:</td>
+                                <td colspan="2" style="text-align: right; color: var(--danger-color);">₹{{ total_pending|floatformat:2 }}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="modern-alert modern-alert-success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <div>No pending collections from supervisors. Perfect!</div>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+
+</div>
+
+<style>
+/* Collection Flow */
+.collection-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.flow-step {
+    flex: 1;
+    min-width: 150px;
+    text-align: center;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    background: var(--gray-100);
+    transition: all var(--transition-base);
+}
+
+.flow-step.active {
+    background: linear-gradient(135deg, #e7f3ff 0%, #d4edda 100%);
+    border: 2px solid var(--success-color);
+    box-shadow: var(--shadow-md);
+}
+
+.flow-step h4 {
+    margin: 0.75rem 0 0.25rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.flow-step p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+}
+
+.flow-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+}
+
+.flow-icon.info {
+    background: linear-gradient(135deg, var(--info-color), #0ab4d6);
+    color: white;
+}
+
+.flow-icon.primary {
+    background: linear-gradient(135deg, var(--primary-color), #0b5ed7);
+    color: white;
+}
+
+.flow-icon.secondary {
+    background: linear-gradient(135deg, var(--gray-600), var(--gray-700));
+    color: white;
+}
+
+.flow-icon.success {
+    background: linear-gradient(135deg, var(--success-color), #157347);
+    color: white;
+}
+
+.flow-arrow {
+    color: var(--gray-400);
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .collection-flow {
+        flex-direction: column;
+    }
+
+    .flow-arrow {
+        transform: rotate(90deg);
+    }
+
+    .flow-step {
+        width: 100%;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .modern-page-header,
+    .modern-breadcrumb,
+    .modern-btn,
+    .card-header-modern > *:not(h3) {
+        display: none !important;
+    }
+
+    .modern-card {
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+    }
+
+    .modern-table {
+        font-size: 0.85rem;
+    }
+}
+</style>
+{% endblock %}

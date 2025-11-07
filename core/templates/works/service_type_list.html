@@ -1,0 +1,77 @@
+{% extends "admin_dashboard.html" %}
+{% block title %}Service Types{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">Service Types</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>Service Types</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>All Service Types</h3>
+      <a href="{% url 'service_type_add' %}" class="modern-btn modern-btn-primary modern-btn-sm">Add Service Type</a>
+    </div>
+    <div style="padding:1.5rem;">
+      {% if messages %}
+      <div class="message-stack">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if items %}
+      <div class="modern-table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th style="width:8%;">#</th>
+              <th>Name</th>
+              <th style="width:15%; text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in items %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ t.name }}</td>
+              <td style="text-align:right; white-space:nowrap;">
+                <a href="{% url 'service_type_edit' t.id %}" class="modern-link">Edit</a>
+                <a href="{% url 'service_type_delete' t.id %}" class="modern-link danger">Delete</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No service types defined yet.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack { margin-bottom:1.5rem; display:flex; flex-direction:column; gap:0.75rem; }
+.message { padding:1rem 1.25rem; border-radius:8px; border-left:4px solid #667eea; background:rgba(102,126,234,0.12); color:#2d3748; font-size:0.95rem; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.message-success { border-left-color:#38a169; background:rgba(56,161,105,0.12); color:#276749; }
+.message-error, .message-danger { border-left-color:#e53e3e; background:rgba(229,62,62,0.12); color:#9b2c2c; }
+.message-warning { border-left-color:#d69e2e; background:rgba(214,158,46,0.15); color:#975a16; }
+.modern-link { margin-left:0.5rem; color:#6366f1; font-weight:600; font-size:0.85rem; }
+.modern-link:first-child { margin-left:0; }
+.modern-link.danger { color:#f56565; }
+.modern-link:hover { text-decoration:underline; }
+</style>
+{% endblock %}

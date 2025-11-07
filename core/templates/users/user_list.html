@@ -1,0 +1,251 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="card mb-3">
+    <div class="card-header bg-primary text-white"><strong>{{ title }} - Filters</strong></div>
+    <div class="card-body">
+      <form method="get" class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label">Role:</label>
+          <select name="role" class="form-select">
+            <option value="">All</option>
+            <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="supervisor" {% if role_filter == 'supervisor' %}selected{% endif %}>Supervisor</option>
+            <option value="fos" {% if role_filter == 'fos' %}selected{% endif %}>FOS</option>
+            <option value="retailer" {% if role_filter == 'retailer' %}selected{% endif %}>Retailer</option>
+            <option value="technician" {% if role_filter == 'technician' %}selected{% endif %}>Technician</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Supervisor Type:</label>
+          <select name="supervisor_category" class="form-select">
+            <option value="">All</option>
+            <option value="Sales" {% if supervisor_category_filter == 'Sales' %}selected{% endif %}>Sales</option>
+            <option value="Services" {% if supervisor_category_filter == 'Services' %}selected{% endif %}>Services</option>
+            <option value="Both" {% if supervisor_category_filter == 'Both' %}selected{% endif %}>Both</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Tech Type:</label>
+          <select name="tech_type" class="form-select">
+            <option value="">All</option>
+            <option value="own" {% if tech_type_filter == 'own' %}selected{% endif %}>Own</option>
+            <option value="freelance" {% if tech_type_filter == 'freelance' %}selected{% endif %}>Freelance</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Status:</label>
+          <select name="status" class="form-select">
+            <option value="">All</option>
+            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label">Search:</label>
+          <input type="text" name="search" class="form-control" placeholder="Name, email, phone..." value="{{ search_query }}">
+        </div>
+
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header bg-dark text-white"><strong>Users ({{ page_obj.paginator.count }})</strong></div>
+    <div class="card-body p-0">
+      {% if page_obj %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Tech Type</th>
+                <th>Supervisor</th>
+                <th>FOS/Operators</th>
+                <th>Collection Wallet</th>
+                <th>Payment Wallet</th>
+                <th>EC Wallet</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in page_obj %}
+                <tr>
+                  <td>{{ u.id }}</td>
+                  <td><strong>{{ u.name }}</strong></td>
+                  <td>{{ u.email }}</td>
+                  <td>{{ u.phone }}</td>
+                  <td>
+                    <span class="badge bg-secondary">{{ u.get_role_display }}</span>
+                    {% if u.role == 'supervisor' and u.supervisor_category %}
+                      <br><small class="badge bg-warning text-dark mt-1">{{ u.supervisor_category.name }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.technician_type %}
+                      <span class="badge bg-info text-dark">{{ u.get_technician_type_display }}</span>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{% if u.supervisor %}{{ u.supervisor.name }}{% else %}-{% endif %}</td>
+                  <td>
+                    {% if u.role == 'fos' %}
+                      {% if u.fosoperatormap_set.all %}
+                        {% for op in u.fosoperatormap_set.all %}
+                          <span class="badge bg-info text-dark">{{ op.operator.name }}</span>
+                        {% endfor %}
+                      {% else %}
+                        <span class="text-muted">No operators</span>
+                      {% endif %}
+                    {% elif u.role == 'retailer' %}
+                      {% if u.retailer_fos_maps.all %}
+                        {% for fos_map in u.retailer_fos_maps.all %}
+                          <span class="badge bg-primary">{{ fos_map.fos.name }}</span>
+                        {% endfor %}
+                      {% else %}
+                        <span class="text-muted">No FOS</span>
+                      {% endif %}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td><span class="badge bg-success">₹{{ u.collection_amount|floatformat:2 }}</span></td>
+                  <td>
+                    {% if u.technician_type == 'freelance' %}
+                      <span class="badge bg-warning text-dark">₹{{ u.payment_wallet|floatformat:2 }}</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.role == 'retailer' %}
+                      {% if u.retailer_wallet.all %}
+                        <div class="ec-wallet-container">
+                          {% for wallet in u.retailer_wallet.all %}
+                            <div class="ec-wallet-item">
+                              <small class="text-muted">{{ wallet.operator.name }}:</small>
+                              <span class="badge bg-danger">₹{{ wallet.pending_amount|floatformat:2 }}</span>
+                            </div>
+                          {% endfor %}
+                        </div>
+                      {% else %}
+                        <span class="badge bg-secondary">₹0.00</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if u.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-danger">Inactive</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <a href="{% url 'user_edit' u.id %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="d-flex justify-content-center p-3">
+          <nav>
+            <ul class="pagination">
+              {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page=1&role={{ role_filter }}&tech_type={{ tech_type_filter }}&search={{ search_query }}&status={{ status_filter }}">First</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&role={{ role_filter }}&tech_type={{ tech_type_filter }}&search={{ search_query }}&status={{ status_filter }}">Previous</a></li>
+              {% endif %}
+
+              <li class="page-item active"><span class="page-link">{{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+
+              {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&role={{ role_filter }}&tech_type={{ tech_type_filter }}&search={{ search_query }}&status={{ status_filter }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&role={{ role_filter }}&tech_type={{ tech_type_filter }}&search={{ search_query }}&status={{ status_filter }}">Last</a></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="alert alert-info m-3">No users found.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+/* Wallet Display Styling */
+.ec-wallet-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ec-wallet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
+.ec-wallet-item small {
+  min-width: 60px;
+  font-size: 0.75rem;
+}
+
+/* Wallet column widths */
+th:nth-child(7), /* Collection Wallet */
+th:nth-child(8), /* Payment Wallet */
+th:nth-child(9)  /* EC Wallet */ {
+  min-width: 120px;
+  text-align: center;
+}
+
+td:nth-child(7),
+td:nth-child(8),
+td:nth-child(9) {
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Badge styling for wallets */
+.badge.bg-success {
+  background-color: #198754 !important;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+}
+
+.badge.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+}
+</style>
+{% endblock %}

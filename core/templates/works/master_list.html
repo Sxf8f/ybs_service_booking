@@ -1,0 +1,93 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ config.title }}{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">{{ config.title }}</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>{{ config.title }}</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>{{ config.title }}</h3>
+      <a href="{% url 'work_master_add' slug %}" class="modern-btn modern-btn-primary modern-btn-sm">Add {{ config.singular }}</a>
+    </div>
+    <div style="padding: 1.5rem;">
+      {% if messages %}
+      <div class="message-stack">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if items %}
+      <div class="modern-table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th style="width:5%;">#</th>
+              <th style="width:20%;">Code</th>
+              <th>Name</th>
+              {% if 'description' in config.fields %}<th>Description</th>{% endif %}
+              <th style="width:10%; text-align:center;">Ordering</th>
+              <th style="width:10%; text-align:center;">Active</th>
+              <th style="width:12%; text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in items %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><code>{{ item.code }}</code></td>
+              <td>{{ item.name }}</td>
+              {% if 'description' in config.fields %}
+              <td>{% if item.description %}{{ item.description }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
+              {% endif %}
+              <td style="text-align:center;">{{ item.ordering }}</td>
+              <td style="text-align:center;">
+                {% if item.is_active %}
+                  <span class="modern-badge modern-badge-success">Active</span>
+                {% else %}
+                  <span class="modern-badge modern-badge-warning">Inactive</span>
+                {% endif %}
+              </td>
+              <td style="text-align:right;">
+                <a href="{% url 'work_master_edit' slug item.pk %}" class="modern-btn modern-btn-sm modern-btn-outline">Edit</a>
+                <a href="{% url 'work_master_delete' slug item.pk %}" class="modern-btn modern-btn-sm" style="background:#f44336;color:#fff;margin-left:6px;">Delete</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No {{ config.title|lower }} defined yet. Click "Add {{ config.singular }}" to create one.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.message-stack { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.message { padding: 1rem 1.25rem; border-radius: 8px; border-left: 4px solid #667eea; background: rgba(102, 126, 234, 0.12); color: #2d3748; font-size: 0.95rem; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+.message-success { border-left-color: #38a169; background: rgba(56, 161, 105, 0.12); color: #276749; }
+.message-error, .message-danger { border-left-color: #e53e3e; background: rgba(229, 62, 62, 0.12); color: #9b2c2c; }
+.message-warning { border-left-color: #d69e2e; background: rgba(214, 158, 46, 0.15); color: #975a16; }
+.modern-btn-outline { background: white; color: #667eea; border: 2px solid #667eea; }
+.modern-btn-outline:hover { background: #eef2ff; }
+</style>
+{% endblock %}
+

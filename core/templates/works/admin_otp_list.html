@@ -1,0 +1,89 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">{{ title }}</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>{{ title }}</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern" style="background:#1f2937; color:#fff;">
+      <h3>{{ title }}</h3>
+      <span class="modern-badge modern-badge-warning">Restricted</span>
+    </div>
+    <div style="padding:1.5rem;">
+      <div class="modern-alert modern-alert-danger" style="margin-bottom:1.25rem;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <div><strong>Note:</strong> This page shows OTPs for all pending works. Use this to help technicians close works when customers are unreachable.</div>
+      </div>
+
+      {% if works %}
+      <div class="modern-table-container">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Work ID</th>
+              <th>Customer</th>
+              <th>Mobile</th>
+              <th>Operator</th>
+              <th>Service</th>
+              <th>Technician</th>
+              <th>OTP</th>
+              <th>OTP Sent At</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for w in works %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td><strong>#{{ w.id }}</strong></td>
+              <td>{{ w.customer_name }}</td>
+              <td>{{ w.mobile_no }}</td>
+              <td>{{ w.operator.name }}</td>
+              <td>{{ w.type_of_service.name }}</td>
+              <td>{% if w.assigned_technician %}{{ w.assigned_technician.name }}{% else %}<span class="subtext">Unassigned</span>{% endif %}</td>
+              <td><span class="modern-badge modern-badge-danger" style="font-size:0.95rem;">{{ w.closing_otp }}</span></td>
+              <td>{{ w.otp_sent_at|date:"Y-m-d H:i:s" }}</td>
+              <td style="text-align:right;">
+                <a href="{% url 'work_close' w.id %}" class="modern-link">Close Work</a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="modern-alert modern-alert-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12.01" y2="8"></line>
+        </svg>
+        <div>No pending works with OTP generated.</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+.subtext { color:#718096; font-size:0.78rem; }
+.modern-link { color:#6366f1; font-weight:600; }
+.modern-link:hover { text-decoration:underline; }
+</style>
+{% endblock %}

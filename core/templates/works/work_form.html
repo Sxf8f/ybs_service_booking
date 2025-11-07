@@ -1,0 +1,242 @@
+{% extends "admin_dashboard.html" %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div class="modern-container">
+  <div class="modern-page-header">
+    <h1 class="modern-page-title">{{ title }}</h1>
+    <div class="modern-breadcrumb">
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <span class="breadcrumb-separator">/</span>
+      <a href="{% url 'work_list' %}">Works</a>
+      <span class="breadcrumb-separator">/</span>
+      <span>{{ title }}</span>
+    </div>
+  </div>
+
+  <div class="modern-card">
+    <div class="card-header-modern">
+      <h3>{{ title }}</h3>
+      <div class="header-hint">Fields marked with * are required.</div>
+    </div>
+    <div style="padding: 1.5rem;">
+      {% if messages %}
+      <div class="message-stack" style="margin-bottom:1.5rem;">
+        {% for message in messages %}
+          <div class="message{% if message.tags %} message-{{ message.tags }}{% endif %}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+      <div class="message message-error" style="margin-bottom:1.25rem;">
+        {{ form.non_field_errors|first }}
+      </div>
+      {% endif %}
+
+      <form method="post" class="work-form" novalidate>
+        {% csrf_token %}
+
+        <section class="modern-section">
+          <header class="section-header">
+            <h4>Customer Details</h4>
+            <p>Basic customer information used for communication and validation.</p>
+          </header>
+          <div class="modern-form-grid">
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.customer_name.id_for_label }}">Customer Name *</label>
+              {{ form.customer_name }}
+              {% if form.customer_name.errors %}<small class="input-error">{{ form.customer_name.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.mobile_no.id_for_label }}">Mobile Number *</label>
+              {{ form.mobile_no }}
+              {% if form.mobile_no.errors %}<small class="input-error">{{ form.mobile_no.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.alternate_no.id_for_label }}">Alternate Number</label>
+              {{ form.alternate_no }}
+              {% if form.alternate_no.errors %}<small class="input-error">{{ form.alternate_no.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.wp_no.id_for_label }}">WhatsApp Number</label>
+              {{ form.wp_no }}
+              {% if form.wp_no.errors %}<small class="input-error">{{ form.wp_no.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group wide">
+              <label class="modern-label" for="{{ form.address.id_for_label }}">Service Address *</label>
+              {{ form.address }}
+              {% if form.address.errors %}<small class="input-error">{{ form.address.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.pincode.id_for_label }}">Pincode *</label>
+              {{ form.pincode }}
+              <small class="help-text">Only pincodes that are assigned to supervisors are accepted.</small>
+              {% if form.pincode.errors %}<small class="input-error">{{ form.pincode.errors|first }}</small>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="modern-section">
+          <header class="section-header">
+            <h4>Service Details</h4>
+            <p>Define the service, operator, and SLA commitments for this work.</p>
+          </header>
+          <div class="modern-form-grid">
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.operator.id_for_label }}">Operator *</label>
+              {{ form.operator }}
+              {% if form.operator.errors %}<small class="input-error">{{ form.operator.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.type_of_service.id_for_label }}">Type of Service *</label>
+              {{ form.type_of_service }}
+              {% if form.type_of_service.errors %}<small class="input-error">{{ form.type_of_service.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.work_from.id_for_label }}">Work From *</label>
+              {{ form.work_from }}
+              {% if form.work_from.errors %}<small class="input-error">{{ form.work_from.errors|first }}</small>{% endif %}
+            </div>
+            {% if form.work_deadline_time %}
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.work_deadline_time.id_for_label }}">Deadline *</label>
+              {{ form.work_deadline_time }}
+              <small class="help-text">Select the SLA deadline for this job.</small>
+              {% if form.work_deadline_time.errors %}<small class="input-error">{{ form.work_deadline_time.errors|first }}</small>{% endif %}
+            </div>
+            {% endif %}
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.amount.id_for_label }}">Work Amount *</label>
+              {{ form.amount }}
+              {% if form.amount.errors %}<small class="input-error">{{ form.amount.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group wide">
+              <label class="modern-label" for="{{ form.remark.id_for_label }}">Remarks</label>
+              {{ form.remark }}
+              {% if form.remark.errors %}<small class="input-error">{{ form.remark.errors|first }}</small>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <section class="modern-section">
+          <header class="section-header">
+            <h4>Configuration</h4>
+            <p>Set category-specific requirements. Options are fully managed through dropdown masters.</p>
+          </header>
+          <div class="modern-callout">
+            <strong>Heads-up:</strong> DTH requests require choosing <em>Full Set</em> or <em>Box Only</em>. Air Fiber requests require selecting <em>With IPTV</em> or <em>Without IPTV</em>. FR jobs additionally request an FR issue.
+          </div>
+          <div class="modern-form-grid">
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.warranty.id_for_label }}">Warranty *</label>
+              {{ form.warranty }}
+              {% if form.warranty.errors %}<small class="input-error">{{ form.warranty.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.category.id_for_label }}">Category *</label>
+              {{ form.category }}
+              {% if form.category.errors %}<small class="input-error">{{ form.category.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group" data-field="dth">
+              <label class="modern-label" for="{{ form.dth_type.id_for_label }}">DTH Type</label>
+              {{ form.dth_type }}
+              {% if form.dth_type.errors %}<small class="input-error">{{ form.dth_type.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group" data-field="fiber">
+              <label class="modern-label" for="{{ form.fiber_type.id_for_label }}">Fiber Type</label>
+              {{ form.fiber_type }}
+              {% if form.fiber_type.errors %}<small class="input-error">{{ form.fiber_type.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group">
+              <label class="modern-label" for="{{ form.job_type.id_for_label }}">Job Type *</label>
+              {{ form.job_type }}
+              {% if form.job_type.errors %}<small class="input-error">{{ form.job_type.errors|first }}</small>{% endif %}
+            </div>
+            <div class="modern-form-group" data-field="fr-issue">
+              <label class="modern-label" for="{{ form.fr_issue.id_for_label }}">FR Issue</label>
+              {{ form.fr_issue }}
+              {% if form.fr_issue.errors %}<small class="input-error">{{ form.fr_issue.errors|first }}</small>{% endif %}
+            </div>
+          </div>
+        </section>
+
+        <div class="form-actions">
+          <a href="{% url 'work_list' %}" class="modern-btn modern-btn-outline">Cancel</a>
+          <button type="submit" class="modern-btn modern-btn-primary">Save Work</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+.header-hint { font-size:0.85rem; color:#a0aec0; }
+.modern-section { margin-bottom:2rem; }
+.section-header { margin-bottom:1rem; }
+.section-header h4 { margin:0; font-size:1.15rem; font-weight:600; color:#2d3748; }
+.section-header p { margin:0.25rem 0 0; color:#718096; font-size:0.85rem; }
+.modern-form-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem; }
+.modern-form-group { display:flex; flex-direction:column; gap:0.35rem; }
+.modern-form-group.wide { grid-column:1 / -1; }
+.modern-label { font-weight:600; color:#4a5568; font-size:0.9rem; }
+.help-text { font-size:0.78rem; color:#718096; }
+.input-error { color:#c53030; font-size:0.8rem; }
+.message-stack { display:flex; flex-direction:column; gap:0.75rem; }
+.message { padding:1rem 1.25rem; border-radius:8px; border-left:4px solid #667eea; background:rgba(102,126,234,0.12); color:#2d3748; font-size:0.95rem; box-shadow:0 2px 4px rgba(0,0,0,0.05); }
+.message-success { border-left-color:#38a169; background:rgba(56,161,105,0.12); color:#276749; }
+.message-error, .message-danger { border-left-color:#e53e3e; background:rgba(229,62,62,0.12); color:#9b2c2c; }
+.message-warning { border-left-color:#d69e2e; background:rgba(214,158,46,0.15); color:#975a16; }
+.form-actions { display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem; }
+.modern-callout { padding:1rem 1.2rem; border-radius:10px; background:rgba(99,102,241,0.08); color:#3730a3; margin-bottom:1.25rem; border:1px solid rgba(99,102,241,0.25); font-size:0.9rem; }
+[data-field="dth"], [data-field="fiber"], [data-field="fr-issue"] { display:none; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const categorySelect = document.getElementById('id_category');
+  const jobSelect = document.getElementById('id_job_type');
+  const dthField = document.querySelector('[data-field="dth"]');
+  const fiberField = document.querySelector('[data-field="fiber"]');
+  const frField = document.querySelector('[data-field="fr-issue"]');
+
+  function toggleCategoryFields() {
+    if (!categorySelect) return;
+    const value = categorySelect.value;
+    if (dthField) dthField.style.display = value === 'dth' ? 'block' : 'none';
+    if (fiberField) fiberField.style.display = value === 'fiber' ? 'block' : 'none';
+    if (value !== 'dth' && dthField) {
+      const select = dthField.querySelector('select');
+      if (select) select.value = '';
+    }
+    if (value !== 'fiber' && fiberField) {
+      const select = fiberField.querySelector('select');
+      if (select) select.value = '';
+    }
+  }
+
+  function toggleJobFields() {
+    if (!jobSelect || !frField) return;
+    const value = jobSelect.value;
+    frField.style.display = value === 'fr' ? 'block' : 'none';
+    if (value !== 'fr') {
+      const select = frField.querySelector('select');
+      if (select) select.value = '';
+    }
+  }
+
+  if (categorySelect) {
+    categorySelect.addEventListener('change', toggleCategoryFields);
+    toggleCategoryFields();
+  }
+
+  if (jobSelect) {
+    jobSelect.addEventListener('change', toggleJobFields);
+    toggleJobFields();
+  }
+});
+</script>
+{% endblock %}
