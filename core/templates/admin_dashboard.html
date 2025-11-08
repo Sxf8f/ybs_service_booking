@@ -758,9 +758,9 @@
       </svg>
       <div class="wallet-text">
         <small class="wallet-label">{{ wallet.label }}</small>
-        <span class="wallet-metric">Pending: ₹{{ wallet.pending|floatformat:2|default:"0.00" }}</span>
+        <span class="wallet-metric">{{ wallet.pending_label|default:"Pending" }}: ₹{{ wallet.pending|floatformat:2|default:"0.00" }}</span>
         {% if wallet.collected is not None %}
-          <span class="wallet-metric-secondary">Collected: ₹{{ wallet.collected|floatformat:2|default:"0.00" }}</span>
+          <span class="wallet-metric-secondary">{{ wallet.collected_label|default:"Collected" }}: ₹{{ wallet.collected|floatformat:2|default:"0.00" }}</span>
         {% endif %}
       </div>
     </div>
@@ -941,7 +941,7 @@
     {% if user.role == 'admin' or user.role == 'supervisor' or user.role == 'fos' %}
     <li>
       <details>
-        <summary class="nav-section-title" style="cursor:pointer"><span class="nav-icon">📶</span><span class="nav-title-text">SIM Stock</span></summary>
+        <summary class="nav-section-title" style="cursor:pointer"><span class="nav-icon">🖨️</span><span class="nav-title-text">Materials Stock</span></summary>
         <ul class="nav-list" style="margin-left:8px">
           <li><a href="{% url 'product_list' %}">Products</a></li>
           <li><a href="{% url 'stock_overview' %}">Ownership/Movement</a></li>
@@ -1301,7 +1301,7 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <p>&copy; 2024 Service Booking System. All rights reserved.</p>
+        <p>&copy; 2025 Yanni Business Solutions Pvt Ltd. All rights reserved.</p>
     </footer>
 
             {% endblock %}

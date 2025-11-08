@@ -7,9 +7,11 @@ from django.contrib import messages
 from django.db.models import Sum, Q, Count
 from django.db import transaction
 from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
 from datetime import date, timedelta
 import pandas as pd
 from decimal import Decimal
+from io import BytesIO
 
 from .models import (
     User, Operator, EcSale, RetailerWallet, EcCollection,
@@ -45,8 +47,6 @@ def ec_upload_select(request):
 @login_required
 def get_fos_by_supervisor_operator(request):
     """API endpoint to get FOS filtered by supervisor and operator"""
-    from django.http import JsonResponse
-
     supervisor_id = request.GET.get('supervisor_id')
     operator_id = request.GET.get('operator_id')
 
@@ -70,8 +70,6 @@ def get_fos_by_supervisor_operator(request):
 @login_required
 def get_supervisors_by_operator(request):
     """API endpoint to get supervisors (Sales/Both category only)"""
-    from django.http import JsonResponse
-
     operator_id = request.GET.get('operator_id')
 
     if not operator_id:
@@ -84,6 +82,68 @@ def get_supervisors_by_operator(request):
     ).values('id', 'name')
 
     return JsonResponse({'supervisors': list(supervisors)})
+
+
+@login_required
+def get_operators_by_supervisor(request):
+    """API endpoint to get operators assigned to FOS under a supervisor"""
+    supervisor_id = request.GET.get('supervisor_id')
+
+    if not supervisor_id:
+        return JsonResponse({'operators': []})
+
+    fos_ids = User.objects.filter(
+        role='fos',
+        supervisor_id=supervisor_id
+    ).values_list('id', flat=True)
+
+    operator_ids = FosOperatorMap.objects.filter(
+        fos_id__in=fos_ids
+    ).values_list('operator_id', flat=True).distinct()
+
+    operators = Operator.objects.filter(
+        id__in=operator_ids
+    ).order_by('name').values('id', 'name')
+
+    return JsonResponse({'operators': list(operators)})
+
+
+@login_required
+def download_ec_sample_excel(request):
+    """Provide a sample Excel template for EC uploads"""
+    columns = [
+        'Order ID',
+        'Order Date',
+        'Partner ID',
+        'Partner Name',
+        'Transfer Amount',
+        'Commission',
+        'Amount Without Commission'
+    ]
+
+    sample_data = [{
+        'Order ID': 'EC123456',
+        'Order Date': date.today().strftime('%Y-%m-%d'),
+        'Partner ID': 'P001',
+        'Partner Name': 'Sample Retailer',
+        'Transfer Amount': 5000,
+        'Commission': 150,
+        'Amount Without Commission': 4850,
+    }]
+
+    df = pd.DataFrame(sample_data, columns=columns)
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='EC Upload Sample')
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=ec_upload_sample.xlsx'
+    return response
 
 
 @login_required
@@ -833,90 +893,103 @@ def ec_upload_all_in_one(request):
         error_messages = []
 
         # Handle Excel upload
-        if entry_type == 'excel' and 'excel_file' in request.FILES:
+        if entry_type == 'excel':
+            if 'excel_file' not in request.FILES or not request.FILES['excel_file']:
+                messages.error(request, 'Please choose an Excel file before uploading.')
+                return redirect('ec_upload_select')
+
             excel_file = request.FILES['excel_file']
 
             try:
                 df = pd.read_excel(excel_file)
+            except ModuleNotFoundError:
+                messages.error(
+                    request,
+                    "Excel support requires the 'openpyxl' package. Please install it and try again."
+                )
+                return redirect('ec_upload_select')
+            except Exception as e:
+                messages.error(request, f'Unable to read the Excel file: {e}')
+                return redirect('ec_upload_select')
 
-                # Expected columns
-                required_cols = ['Order ID', 'Order Date', 'Partner ID', 'Partner Name',
-                                'Transfer Amount', 'Commission', 'Amount Without Commission']
+            # Expected columns
+            required_cols = ['Order ID', 'Order Date', 'Partner ID', 'Partner Name',
+                            'Transfer Amount', 'Commission', 'Amount Without Commission']
 
-                # Check if all required columns exist
-                missing_cols = [col for col in required_cols if col not in df.columns]
-                if missing_cols:
-                    messages.error(request, f"Missing columns in Excel: {', '.join(missing_cols)}")
-                    return redirect('ec_upload_select')
+            # Check if all required columns exist
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            if missing_cols:
+                messages.error(request, f"Missing columns in Excel: {', '.join(missing_cols)}")
+                return redirect('ec_upload_select')
 
-                # Process each row from Excel
-                for index, row in df.iterrows():
-                    try:
-                        order_id = str(row['Order ID']).strip()
-                        order_date_raw = row['Order Date']
-                        partner_id = str(row['Partner ID']).strip() if pd.notna(row['Partner ID']) else ''
-                        partner_name = str(row['Partner Name']).strip() if pd.notna(row['Partner Name']) else ''
-                        transfer_amount = Decimal(str(row['Transfer Amount'])) if pd.notna(row['Transfer Amount']) else 0
-                        commission = Decimal(str(row['Commission'])) if pd.notna(row['Commission']) else 0
-                        amount_without_commission = Decimal(str(row['Amount Without Commission'])) if pd.notna(row['Amount Without Commission']) else 0
+            # Process each row from Excel
+            for index, row in df.iterrows():
+                try:
+                    order_id = str(row['Order ID']).strip()
+                    order_date_raw = row['Order Date']
+                    partner_id = str(row['Partner ID']).strip() if pd.notna(row['Partner ID']) else ''
+                    partner_name = str(row['Partner Name']).strip() if pd.notna(row['Partner Name']) else ''
+                    transfer_amount = Decimal(str(row['Transfer Amount'])) if pd.notna(row['Transfer Amount']) else 0
+                    commission = Decimal(str(row['Commission'])) if pd.notna(row['Commission']) else 0
+                    amount_without_commission = Decimal(str(row['Amount Without Commission'])) if pd.notna(row['Amount Without Commission']) else 0
 
-                        # Parse date
-                        if isinstance(order_date_raw, str):
-                            # Try DD.MM.YYYY format
-                            if '.' in order_date_raw:
-                                parts = order_date_raw.split('.')
-                                order_date = date(int(parts[2]), int(parts[1]), int(parts[0]))
-                            else:
-                                order_date = pd.to_datetime(order_date_raw).date()
+                    # Parse date
+                    if isinstance(order_date_raw, str):
+                        # Try DD.MM.YYYY format
+                        if '.' in order_date_raw:
+                            parts = order_date_raw.split('.')
+                            order_date = date(int(parts[2]), int(parts[1]), int(parts[0]))
                         else:
                             order_date = pd.to_datetime(order_date_raw).date()
+                    else:
+                        order_date = pd.to_datetime(order_date_raw).date()
 
-                        # Check duplicate
-                        if EcSale.objects.filter(order_id=order_id).exists():
-                            error_messages.append(f"Row {index+2}: Order ID {order_id} already exists.")
-                            continue
+                    # Check duplicate
+                    if EcSale.objects.filter(order_id=order_id).exists():
+                        error_messages.append(f"Row {index+2}: Order ID {order_id} already exists.")
+                        continue
 
-                        # Match retailer
-                        retailer = retailers.filter(name__iexact=partner_name).first()
-                        if not retailer:
-                            error_messages.append(f"Row {index+2}: Retailer '{partner_name}' not found under this FOS.")
-                            continue
+                    # Match retailer
+                    retailer = retailers.filter(name__iexact=partner_name).first()
+                    if not retailer:
+                        error_messages.append(f"Row {index+2}: Retailer '{partner_name}' not found under this FOS.")
+                        continue
 
-                        # Create EC Sale
-                        EcSale.objects.create(
-                            order_id=order_id,
-                            order_date=order_date,
-                            partner_id=partner_id,
-                            partner_name=partner_name,
-                            transfer_amount=transfer_amount,
-                            commission=commission,
-                            amount_without_commission=amount_without_commission,
-                            operator=operator,
-                            supervisor=supervisor,
-                            fos=fos,
-                            retailer=retailer,
-                            uploaded_by=request.user
-                        )
+                    # Create EC Sale
+                    EcSale.objects.create(
+                        order_id=order_id,
+                        order_date=order_date,
+                        partner_id=partner_id,
+                        partner_name=partner_name,
+                        transfer_amount=transfer_amount,
+                        commission=commission,
+                        amount_without_commission=amount_without_commission,
+                        operator=operator,
+                        supervisor=supervisor,
+                        fos=fos,
+                        retailer=retailer,
+                        uploaded_by=request.user
+                    )
 
-                        # Update RetailerWallet (retailer debt to FOS)
-                        # NOTE: FosWallet is NOT updated here - it's updated when FOS actually collects
-                        wallet, created = RetailerWallet.objects.get_or_create(
-                            retailer=retailer,
-                            operator=operator,
-                            defaults={'pending_amount': 0, 'total_sales': 0}
-                        )
-                        wallet.pending_amount += amount_without_commission
-                        wallet.total_sales += amount_without_commission
-                        wallet.save()
+                    # Update RetailerWallet (retailer debt to FOS)
+                    # NOTE: FosWallet is NOT updated here - it's updated when FOS actually collects
+                    wallet, created = RetailerWallet.objects.get_or_create(
+                        retailer=retailer,
+                        operator=operator,
+                        defaults={'pending_amount': 0, 'total_sales': 0}
+                    )
+                    wallet.pending_amount += amount_without_commission
+                    wallet.total_sales += amount_without_commission
+                    wallet.save()
 
-                        success_count += 1
+                    success_count += 1
 
-                    except Exception as e:
-                        error_messages.append(f"Row {index+2}: {str(e)}")
+                except Exception as e:
+                    error_messages.append(f"Row {index+2}: {str(e)}")
 
-            except Exception as e:
-                messages.error(request, f'Error reading Excel file: {str(e)}')
-                return redirect('ec_quick_entry')
+            if success_count == 0 and not error_messages:
+                messages.warning(request, 'No rows were processed from the Excel file.')
+                return redirect('ec_upload_select')
 
         # Handle manual entry
         else:
@@ -932,7 +1005,7 @@ def ec_upload_all_in_one(request):
             # Validate we have data
             if not order_ids:
                 messages.error(request, 'Please add at least one entry.')
-                return redirect('ec_quick_entry')
+                return redirect('ec_upload_select')
 
             # Process each row
             for i in range(len(order_ids)):
@@ -995,6 +1068,10 @@ def ec_upload_all_in_one(request):
                 except Exception as e:
                     error_messages.append(f"Row {i+1}: {str(e)}")
 
+            if success_count == 0 and not error_messages:
+                messages.warning(request, 'Entries were submitted but nothing was saved. Please review the data and try again.')
+                return redirect('ec_upload_select')
+
         # Show results
         if success_count > 0:
             messages.success(request, f'Successfully saved {success_count} EC recharge entries.')
@@ -1011,21 +1088,37 @@ def ec_upload_all_in_one(request):
             return redirect('ec_upload_select')
 
     # GET request - show form
-    operators = Operator.objects.all().order_by('name')
+    operators = Operator.objects.none()
 
     # Filter operators and FOS based on role
     if user.role == 'fos':
         # FOS: show only operators they have assigned via FosOperatorMap
-        fos_operators = FosOperatorMap.objects.filter(fos=user).values_list('operator_id', flat=True)
-        operators = operators.filter(id__in=fos_operators)
+        fos_operator_ids = FosOperatorMap.objects.filter(
+            fos=user
+        ).values_list('operator_id', flat=True)
+        operators = Operator.objects.filter(
+            id__in=fos_operator_ids
+        ).order_by('name')
         supervisors = None  # FOS doesn't select supervisor
         fos_users = None  # FOS doesn't select FOS (it's themselves)
     elif user.role == 'supervisor':
-        # Supervisor: show all operators, only their FOS
-        supervisors = None  # Supervisor doesn't select themselves
+        # Supervisor: show operators linked to their FOS and list those FOS
+        supervisor_fos_ids = User.objects.filter(
+            role='fos',
+            supervisor=user
+        ).values_list('id', flat=True)
+        operator_ids = FosOperatorMap.objects.filter(
+            fos_id__in=supervisor_fos_ids
+        ).values_list('operator_id', flat=True).distinct()
+        operators = Operator.objects.filter(
+            id__in=operator_ids
+        ).order_by('name')
+        if not operators.exists():
+            operators = Operator.objects.all().order_by('name')
+        supervisors = None  # Supervisor is implicit
         fos_users = User.objects.filter(role='fos', supervisor=user).order_by('name')
     else:  # admin
-        # Admin: show all supervisors (Sales only) and will dynamically load FOS
+        # Admin: supervisors first; operators loaded dynamically
         supervisors = User.objects.filter(
             role='supervisor',
             supervisor_category__name__in=['Sales', 'Both']

@@ -1,7 +1,18 @@
 from pyexpat.errors import messages
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
-from .models import FosOperatorMap, Operator, Pincode, PincodeAssignment, RetailerFosMap, SupervisorCategory, User
+from .models import (
+    FosOperatorMap,
+    Operator,
+    Pincode,
+    PincodeAssignment,
+    RetailerFosMap,
+    SupervisorCategory,
+    User,
+    RetailerWallet,
+    RetailerSimWallet,
+    RetailerHandsetWallet,
+)
 from django.contrib import messages
 import pandas as pd
 from django.shortcuts import render, redirect
@@ -19,6 +30,7 @@ from pandas.api import types as pdtypes
 from django import forms
 from .models import Product, Operator, ProductStock, Purchase, PurchaseItem, ProductSerial, UserProductStock, CollectionTransfer, TechnicianPayment, WorkCategoryOption, WorkWarrantyOption, WorkJobTypeOption, WorkDthTypeOption, WorkFiberTypeOption, WorkFrIssueOption
 from django.db import transaction
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from django.db.models import Sum, ExpressionWrapper, F, FloatField, Q
 from django.forms import modelform_factory
 from .forms import StockTransferToSupervisorForm, StockTransferToTechnicianForm, WorkForm, WorkCloseForm
@@ -1129,20 +1141,85 @@ def add_retailer(request):
         fos_list.append(fos)
 
     if request.method == 'POST':
+        def parse_amount(value):
+            try:
+                return Decimal(value or '0').quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            except (InvalidOperation, TypeError):
+                return Decimal('0.00')
+
         name = request.POST.get('name')
         phone = request.POST.get('phone')
         email = request.POST.get('email')
         password = request.POST.get('password')
         supervisor_id = request.POST.get('supervisor_id')
         fos_ids = request.POST.getlist('fos_ids')
+        opening_ec = parse_amount(request.POST.get('opening_ec_pending'))
+        opening_sim = parse_amount(request.POST.get('opening_sim_pending'))
+        opening_handset = parse_amount(request.POST.get('opening_handset_pending'))
 
-        supervisor = User.objects.get(id=supervisor_id)
-        retailer = User.objects.create(name=name, phone=phone, email=email, password=password, role='retailer', supervisor=supervisor)
+        try:
+            supervisor = User.objects.get(id=supervisor_id)
+            with transaction.atomic():
+                retailer = User.objects.create(
+                    name=name,
+                    phone=phone,
+                    email=email,
+                    password=password,
+                    role='retailer',
+                    supervisor=supervisor
+                )
 
-        for fid in fos_ids:
-            RetailerFosMap.objects.create(retailer=retailer, fos_id=fid)
+                for fid in fos_ids:
+                    RetailerFosMap.objects.create(retailer=retailer, fos_id=fid)
 
-        return redirect('dashboard')
+                # Apply opening balances
+                opening_operator, _ = Operator.objects.get_or_create(name="Opening Balance")
+
+                if opening_ec > 0:
+                    wallet, _ = RetailerWallet.objects.get_or_create(
+                        retailer=retailer,
+                        operator=opening_operator,
+                        defaults={'pending_amount': Decimal('0.00'), 'total_sales': Decimal('0.00')}
+                    )
+                    wallet.pending_amount += opening_ec
+                    wallet.total_sales += opening_ec
+                    wallet.save()
+
+                if opening_sim > 0:
+                    sim_wallet, _ = RetailerSimWallet.objects.get_or_create(
+                        retailer=retailer,
+                        operator=opening_operator,
+                        defaults={
+                            'pending_amount': Decimal('0.00'),
+                            'total_amount': Decimal('0.00'),
+                            'total_sims_received': 0
+                        }
+                    )
+                    sim_wallet.pending_amount += opening_sim
+                    sim_wallet.total_amount += opening_sim
+                    sim_wallet.save()
+
+                if opening_handset > 0:
+                    handset_wallet, _ = RetailerHandsetWallet.objects.get_or_create(
+                        retailer=retailer,
+                        operator=opening_operator,
+                        defaults={
+                            'pending_amount': Decimal('0.00'),
+                            'total_amount': Decimal('0.00'),
+                            'total_handsets_received': 0
+                        }
+                    )
+                    handset_wallet.pending_amount += opening_handset
+                    handset_wallet.total_amount += opening_handset
+                    handset_wallet.save()
+
+            messages.success(request, "Retailer added successfully!")
+            return redirect('add_retailer')
+        except User.DoesNotExist:
+            messages.error(request, "Selected supervisor not found.")
+        except Exception as exc:
+            messages.error(request, f"Could not add retailer: {exc}")
+            return redirect('add_retailer')
 
     return render(request, 'add_retailer.html', {'supervisors': supervisors, 'fos_list': fos_list})
 
@@ -1297,7 +1374,16 @@ def admin_dashboard(request):
     # Add wallet balances based on role and category
     wallets = []
 
-    def add_wallet_entry(type_code, label, pending_value, description, color, collected_value=None):
+    def add_wallet_entry(
+        type_code,
+        label,
+        pending_value,
+        description,
+        color,
+        collected_value=None,
+        pending_label='Pending',
+        collected_label='Collected'
+    ):
         pending_value = pending_value or 0
         entry = {
             'type': type_code,
@@ -1307,6 +1393,8 @@ def admin_dashboard(request):
             'description': description,
             'color': color,
             'amount': pending_value,
+            'pending_label': pending_label,
+            'collected_label': collected_label,
         }
         wallets.append(entry)
 
@@ -1318,8 +1406,16 @@ def admin_dashboard(request):
         )
         ec_pending = ec_data['pending'] or 0
         ec_total = ec_data['total'] or 0
-        ec_collected = max(ec_total - ec_pending, 0)
-        add_wallet_entry('ec', 'EC Wallet', ec_pending, 'EC debt to FOS', 'danger', ec_collected)
+        add_wallet_entry(
+            'ec',
+            'EC Wallet',
+            ec_pending,
+            'EC debt to FOS',
+            'danger',
+            collected_value=ec_total,
+            pending_label='Pending to Give',
+            collected_label='Total Stock Came'
+        )
 
         sim_data = RetailerSimWallet.objects.filter(retailer=user).aggregate(
             pending=Sum('pending_amount'),
@@ -1327,8 +1423,16 @@ def admin_dashboard(request):
         )
         sim_pending = sim_data['pending'] or 0
         sim_total = sim_data['total'] or 0
-        sim_collected = max(sim_total - sim_pending, 0)
-        add_wallet_entry('sim', 'SIM Wallet', sim_pending, 'SIM debt to FOS', 'warning', sim_collected)
+        add_wallet_entry(
+            'sim',
+            'SIM Wallet',
+            sim_pending,
+            'SIM debt to FOS',
+            'warning',
+            collected_value=sim_total,
+            pending_label='Pending to Give',
+            collected_label='Total Stock Came'
+        )
 
         handset_data = RetailerHandsetWallet.objects.filter(retailer=user).aggregate(
             pending=Sum('pending_amount'),
@@ -1336,8 +1440,16 @@ def admin_dashboard(request):
         )
         handset_pending = handset_data['pending'] or 0
         handset_total = handset_data['total'] or 0
-        handset_collected = max(handset_total - handset_pending, 0)
-        add_wallet_entry('handset', 'Handset Wallet', handset_pending, 'Handset debt to FOS', 'info', handset_collected)
+        add_wallet_entry(
+            'handset',
+            'Handset Wallet',
+            handset_pending,
+            'Handset debt to FOS',
+            'info',
+            collected_value=handset_total,
+            pending_label='Pending to Give',
+            collected_label='Total Stock Came'
+        )
 
         # Add FOS operator details (if needed)
         context['user_operators'] = None
@@ -1371,9 +1483,11 @@ def admin_dashboard(request):
         if user.supervisor_category:
             category_name = user.supervisor_category.name
             context['user_category'] = category_name
+            normalized_category = category_name.lower()
+            handles_sales = 'sale' in normalized_category or 'both' in normalized_category
+            handles_service = 'service' in normalized_category or 'both' in normalized_category
 
-            if category_name == 'Sales':
-                # Sales Supervisor: EC Wallet + SIM Wallet + Handset Wallet
+            if handles_sales:
                 ec_data = SupervisorWallet.objects.filter(supervisor=user).aggregate(
                     pending=Sum('pending_amount'),
                     collected=Sum('total_collected_from_fos')
@@ -1392,31 +1506,22 @@ def admin_dashboard(request):
                 )
                 add_wallet_entry('handset', 'Handset Wallet', handset_data['pending'] or 0, 'Handsets from FOS, pending to company', 'info', handset_data['collected'] or 0)
 
-            elif category_name == 'Service':
-                # Service Supervisor: Only Service Collection
-                add_wallet_entry('service', 'Service Collection', user.collection_amount, 'Work amount collected', 'success')
-
-            elif category_name == 'Both':
-                # Both: EC + SIM + Service Collection
-                ec_data = SupervisorWallet.objects.filter(supervisor=user).aggregate(
-                    pending=Sum('pending_amount'),
-                    collected=Sum('total_collected_from_fos')
+            if handles_service:
+                service_pending = user.collection_amount or 0
+                service_collected_total = CollectionTransfer.objects.filter(
+                    supervisor=user,
+                    status='Accepted'
+                ).aggregate(total=Sum('amount'))['total'] or 0
+                add_wallet_entry(
+                    'service',
+                    'Service Collection',
+                    service_pending,
+                    'Work amount collected',
+                    'success',
+                    collected_value=service_collected_total,
+                    pending_label='Pending to Give',
+                    collected_label='Amount Collected Till'
                 )
-                add_wallet_entry('ec', 'EC Wallet', ec_data['pending'] or 0, 'EC from FOS, pending to company', 'danger', ec_data['collected'] or 0)
-
-                sim_data = SupervisorSimWallet.objects.filter(supervisor=user).aggregate(
-                    pending=Sum('pending_amount'),
-                    collected=Sum('total_collected_from_fos')
-                )
-                add_wallet_entry('sim', 'SIM Wallet', sim_data['pending'] or 0, 'SIM from FOS, pending to company', 'warning', sim_data['collected'] or 0)
-
-                add_wallet_entry('service', 'Service Collection', user.collection_amount, 'Work amount collected', 'success')
-
-                handset_data = SupervisorHandsetWallet.objects.filter(supervisor=user).aggregate(
-                    pending=Sum('pending_amount'),
-                    collected=Sum('total_collected_from_fos')
-                )
-                add_wallet_entry('handset', 'Handset Wallet', handset_data['pending'] or 0, 'Handsets from FOS, pending to company', 'info', handset_data['collected'] or 0)
 
     elif user.role == 'admin':
         # Admin: Show all wallet types separately
