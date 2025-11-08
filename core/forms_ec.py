@@ -2,14 +2,14 @@
 Forms for EC Recharge System
 """
 from django import forms
-from .models import User, Operator, EcSale, EcCollection, Retailer
+from .models import User, Operator, EcSale, EcCollection, Retailer, FosOperatorMap
 from django.core.exceptions import ValidationError
 
 
 class EcUploadSelectForm(forms.Form):
     """Step 1: Select Operator, Supervisor, FOS"""
     operator = forms.ModelChoiceField(
-        queryset=Operator.objects.all(),
+        queryset=Operator.objects.none(),
         label="Select Operator",
         widget=forms.Select(attrs={'class': 'form-select'})
     )
@@ -32,10 +32,42 @@ class EcUploadSelectForm(forms.Form):
         self.fields['supervisor'].queryset = User.objects.filter(
             role='supervisor',
             supervisor_category__name__in=['Sales', 'Both']
-        )
+        ).order_by('name')
+        self.fields['supervisor'].empty_label = "Select Supervisor"
 
-        # Show all FOS initially (will be filtered by JavaScript based on supervisor and operator)
-        self.fields['fos'].queryset = User.objects.filter(role='fos')
+        supervisor_id = None
+        if self.data.get('supervisor'):
+            supervisor_id = self.data.get('supervisor')
+        elif self.initial.get('supervisor'):
+            supervisor_id = self.initial.get('supervisor')
+
+        fos_ids = []
+        if supervisor_id:
+            fos_ids = User.objects.filter(role='fos', supervisor_id=supervisor_id).values_list('id', flat=True)
+            operator_ids = FosOperatorMap.objects.filter(fos_id__in=fos_ids).values_list('operator_id', flat=True)
+            self.fields['operator'].queryset = Operator.objects.filter(id__in=operator_ids).order_by('name')
+        else:
+            self.fields['operator'].queryset = Operator.objects.none()
+        self.fields['operator'].empty_label = "Select Supervisor first"
+
+        operator_id = self.data.get('operator') or self.initial.get('operator')
+        if supervisor_id and operator_id:
+            mapped_fos_ids = FosOperatorMap.objects.filter(
+                operator_id=operator_id,
+                fos_id__in=fos_ids if supervisor_id else []
+            ).values_list('fos_id', flat=True)
+            fos_queryset = User.objects.filter(
+                id__in=mapped_fos_ids,
+                role='fos',
+                supervisor_id=supervisor_id
+            )
+        elif supervisor_id:
+            fos_queryset = User.objects.filter(role='fos', supervisor_id=supervisor_id)
+        else:
+            fos_queryset = User.objects.none()
+
+        self.fields['fos'].queryset = fos_queryset.order_by('name')
+        self.fields['fos'].empty_label = "Select Operator first"
 
 
 class EcManualEntryForm(forms.ModelForm):

@@ -157,7 +157,7 @@
     <!-- Info Card -->
     <div class="info-card">
         <i class="fas fa-info-circle me-2"></i>
-        <strong>Upload Process:</strong> First select the Operator, then the Supervisor (Sales/Both), and finally the FOS who works with that operator.
+        <strong>Upload Process:</strong> Start with the Supervisor, then choose the Operator mapped to their team, and finally select the FOS who handles that operator.
     </div>
 
     <!-- Form Section -->
@@ -169,19 +169,6 @@
         <form method="post" id="hierarchyForm">
             {% csrf_token %}
 
-            <!-- Operator Selection -->
-            <div class="form-group">
-                <label for="{{ form.operator.id_for_label }}" class="form-label">
-                    <i class="fas fa-building me-1"></i>
-                    Operator <span class="required-star">*</span>
-                </label>
-                {{ form.operator }}
-                {% if form.operator.errors %}
-                    <div class="invalid-feedback d-block">{{ form.operator.errors.0 }}</div>
-                {% endif %}
-                <small class="form-text text-muted">Select the telecom operator for this EC upload</small>
-            </div>
-
             <!-- Supervisor Selection -->
             <div class="form-group">
                 <label for="{{ form.supervisor.id_for_label }}" class="form-label">
@@ -192,7 +179,23 @@
                 {% if form.supervisor.errors %}
                     <div class="invalid-feedback d-block">{{ form.supervisor.errors.0 }}</div>
                 {% endif %}
-                <small class="form-text text-muted">Select the supervisor who manages sales for this operator</small>
+                <small class="form-text text-muted">Choose the supervisor first to filter the available operators and FOS</small>
+            </div>
+
+            <!-- Operator Selection -->
+            <div class="form-group">
+                <label for="{{ form.operator.id_for_label }}" class="form-label">
+                    <i class="fas fa-building me-1"></i>
+                    Operator <span class="required-star">*</span>
+                </label>
+                {{ form.operator }}
+                {% if form.operator.errors %}
+                    <div class="invalid-feedback d-block">{{ form.operator.errors.0 }}</div>
+                {% endif %}
+                <div id="operatorLoading" class="text-muted mt-2" style="display: none;">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Loading operators...
+                </div>
+                <small class="form-text text-muted">After selecting supervisor, pick the operator assigned to their FOS team</small>
             </div>
 
             <!-- FOS Selection -->
@@ -248,39 +251,116 @@ document.addEventListener('DOMContentLoaded', function() {
     const operatorSelect = document.getElementById('{{ form.operator.id_for_label }}');
     const supervisorSelect = document.getElementById('{{ form.supervisor.id_for_label }}');
     const fosSelect = document.getElementById('{{ form.fos.id_for_label }}');
+    const operatorLoading = document.getElementById('operatorLoading');
     const fosLoading = document.getElementById('fosLoading');
     const fosError = document.getElementById('fosError');
     const fosErrorMessage = document.getElementById('fosErrorMessage');
-    const submitBtn = document.getElementById('submitBtn');
+    let initialOperatorValue = operatorSelect ? operatorSelect.value : '';
+    let initialFosValue = fosSelect ? fosSelect.value : '';
 
-    // Function to update FOS list based on operator and supervisor
-    function updateFosList() {
+    function resetOperatorSelect(placeholderText) {
+        if (!operatorSelect) {
+            return;
+        }
+        operatorSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+        operatorSelect.disabled = true;
+    }
+
+    function resetFosSelect(placeholderText) {
+        if (!fosSelect) {
+            return;
+        }
+        fosSelect.innerHTML = `<option value="">${placeholderText}</option>`;
+        fosSelect.disabled = true;
+        if (fosError) {
+            fosError.style.display = 'none';
+            fosErrorMessage.textContent = '';
+        }
+    }
+
+    function handleSupervisorChange() {
+        const supervisorId = supervisorSelect.value;
+        resetOperatorSelect(supervisorId ? 'Loading operators...' : 'Select Supervisor first');
+        resetFosSelect('Select Operator first');
+
+        if (operatorLoading) {
+            operatorLoading.style.display = supervisorId ? 'block' : 'none';
+        }
+
+        if (!supervisorId) {
+            return;
+        }
+
+        fetch(`{% url 'ec_get_operators' %}?supervisor_id=${supervisorId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (operatorLoading) {
+                    operatorLoading.style.display = 'none';
+                }
+                const operators = data.operators || [];
+                if (operators.length > 0) {
+                    operatorSelect.innerHTML = '<option value="">Select Operator</option>';
+                    operators.forEach(op => {
+                        const option = document.createElement('option');
+                        option.value = op.id;
+                        option.textContent = op.name;
+                        operatorSelect.appendChild(option);
+                    });
+                    operatorSelect.disabled = false;
+
+                    if (initialOperatorValue) {
+                        const hasInitial = operators.some(op => String(op.id) === String(initialOperatorValue));
+                        if (hasInitial) {
+                            operatorSelect.value = String(initialOperatorValue);
+                            initialOperatorValue = '';
+                            handleOperatorChange();
+                        } else {
+                            initialOperatorValue = '';
+                        }
+                    }
+                } else {
+                    operatorSelect.innerHTML = '<option value="">No operators mapped</option>';
+                    operatorSelect.disabled = true;
+                    initialOperatorValue = '';
+                }
+            })
+            .catch(error => {
+                if (operatorLoading) {
+                    operatorLoading.style.display = 'none';
+                }
+                console.error('Error loading operators:', error);
+                resetOperatorSelect('Unable to load operators');
+            });
+    }
+
+    function handleOperatorChange() {
         const operatorId = operatorSelect.value;
         const supervisorId = supervisorSelect.value;
 
         if (!operatorId || !supervisorId) {
-            // Reset FOS select if either operator or supervisor is not selected
-            fosSelect.innerHTML = '<option value="">---------</option>';
-            fosSelect.disabled = true;
+            resetFosSelect('Select Operator first');
             return;
         }
 
-        // Show loading indicator
-        fosLoading.style.display = 'block';
-        fosError.style.display = 'none';
+        if (fosLoading) {
+            fosLoading.style.display = 'block';
+        }
+        if (fosError) {
+            fosError.style.display = 'none';
+        }
         fosSelect.disabled = true;
+        fosSelect.innerHTML = '<option value="">Loading FOS...</option>';
 
-        // Fetch FOS list
         fetch(`{% url 'ec_get_fos' %}?operator_id=${operatorId}&supervisor_id=${supervisorId}`)
             .then(response => response.json())
             .then(data => {
-                fosLoading.style.display = 'none';
+                if (fosLoading) {
+                    fosLoading.style.display = 'none';
+                }
 
-                // Clear existing options
-                fosSelect.innerHTML = '<option value="">---------</option>';
+                fosSelect.innerHTML = '<option value="">Select FOS</option>';
 
                 if (data.fos_list && data.fos_list.length > 0) {
-                    // Add FOS options
                     data.fos_list.forEach(fos => {
                         const option = document.createElement('option');
                         option.value = fos.id;
@@ -288,27 +368,49 @@ document.addEventListener('DOMContentLoaded', function() {
                         fosSelect.appendChild(option);
                     });
                     fosSelect.disabled = false;
+
+                    if (initialFosValue) {
+                        const hasInitialFos = data.fos_list.some(fos => String(fos.id) === String(initialFosValue));
+                        if (hasInitialFos) {
+                            fosSelect.value = String(initialFosValue);
+                        }
+                        initialFosValue = '';
+                    }
                 } else {
-                    // No FOS found
-                    fosError.style.display = 'block';
-                    fosErrorMessage.textContent = 'No FOS found with this operator under the selected supervisor. Please check operator assignments.';
+                    if (fosError) {
+                        fosError.style.display = 'block';
+                        fosErrorMessage.textContent = 'No FOS found with this operator under the selected supervisor. Please check operator assignments.';
+                    }
                     fosSelect.disabled = true;
+                    initialFosValue = '';
                 }
             })
             .catch(error => {
-                fosLoading.style.display = 'none';
-                fosError.style.display = 'block';
-                fosErrorMessage.textContent = 'Error loading FOS list. Please try again.';
+                if (fosLoading) {
+                    fosLoading.style.display = 'none';
+                }
+                if (fosError) {
+                    fosError.style.display = 'block';
+                    fosErrorMessage.textContent = 'Error loading FOS list. Please try again.';
+                }
                 console.error('Error:', error);
             });
     }
 
-    // Add event listeners
-    operatorSelect.addEventListener('change', updateFosList);
-    supervisorSelect.addEventListener('change', updateFosList);
+    supervisorSelect.addEventListener('change', handleSupervisorChange);
+    operatorSelect.addEventListener('change', handleOperatorChange);
 
-    // Disable FOS select initially
-    fosSelect.disabled = true;
+    if (supervisorSelect.value) {
+        handleSupervisorChange();
+    } else {
+        resetOperatorSelect('Select Supervisor first');
+    }
+
+    if (!operatorSelect.value) {
+        resetFosSelect('Select Operator first');
+    } else if (supervisorSelect.value) {
+        handleOperatorChange();
+    }
 
     // Form validation
     document.getElementById('hierarchyForm').addEventListener('submit', function(e) {
