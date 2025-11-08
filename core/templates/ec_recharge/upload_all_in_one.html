@@ -41,68 +41,73 @@
         {% csrf_token %}
 
         <!-- Step 1: Hierarchy Selection -->
-        <div class="modern-card">
-            <div class="card-header-modern">
-                <h3>Step 1: Select Hierarchy</h3>
-                <span class="modern-badge modern-badge-primary">Required</span>
-            </div>
-
-            <div class="form-row">
-                <!-- Operator Selection - ALL USERS -->
-                <div class="form-col-3">
-                    <div class="modern-form-group">
-                        <label for="operator" class="modern-label">
-                            Operator <span class="required-mark">*</span>
-                        </label>
-                        <select name="operator" id="operator" class="modern-input" required>
-                            <option value="">Select Operator</option>
-                            {% for op in operators %}
-                                <option value="{{ op.id }}">{{ op.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+            <div class="modern-card">
+                <div class="card-header-modern">
+                    <h3>Step 1: Select Hierarchy</h3>
+                    <span class="modern-badge modern-badge-primary">Required</span>
                 </div>
 
-                <!-- Supervisor Selection - ADMIN ONLY -->
-                {% if user_role == 'admin' %}
-                <div class="form-col-3">
-                    <div class="modern-form-group">
-                        <label for="supervisor" class="modern-label">
-                            Supervisor (Sales) <span class="required-mark">*</span>
-                        </label>
-                        <select name="supervisor" id="supervisor" class="modern-input" required>
-                            <option value="">Select Supervisor</option>
-                            {% for sup in supervisors %}
-                                <option value="{{ sup.id }}">{{ sup.name }} ({{ sup.supervisor_category.name }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- FOS Selection - ADMIN AND SUPERVISOR ONLY -->
-                {% if user_role in 'admin supervisor' %}
-                <div class="form-col-3">
-                    <div class="modern-form-group">
-                        <label for="fos" class="modern-label">
-                            FOS <span class="required-mark">*</span>
-                        </label>
-                        <select name="fos" id="fos" class="modern-input" required {% if user_role == 'admin' %}disabled{% endif %}>
-                            <option value="">{% if user_role == 'admin' %}Select Supervisor first{% else %}Select FOS{% endif %}</option>
-                            {% if user_role == 'supervisor' and fos_users %}
-                                {% for fos_user in fos_users %}
-                                    <option value="{{ fos_user.id }}">{{ fos_user.name }}</option>
+                <div class="form-row">
+                    <!-- Supervisor Selection - ADMIN ONLY -->
+                    {% if user_role == 'admin' %}
+                    <div class="form-col-3">
+                        <div class="modern-form-group">
+                            <label for="supervisor" class="modern-label">
+                                Supervisor (Sales) <span class="required-mark">*</span>
+                            </label>
+                            <select name="supervisor" id="supervisor" class="modern-input" required>
+                                <option value="">Select Supervisor</option>
+                                {% for sup in supervisors %}
+                                    <option value="{{ sup.id }}">{{ sup.name }} ({{ sup.supervisor_category.name }})</option>
                                 {% endfor %}
-                            {% endif %}
-                        </select>
-                        {% if user_role == 'admin' %}
-                        <div id="fos-loading" class="loading-indicator" style="display: none;">
-                            Loading FOS...
+                            </select>
+                            <div id="supervisor-loading" class="loading-indicator" style="display: none;">
+                                Loading operators...
+                            </div>
                         </div>
-                        {% endif %}
                     </div>
-                </div>
-                {% endif %}
+                    {% endif %}
+
+                    <!-- Operator Selection - ALL USERS -->
+                    <div class="form-col-3">
+                        <div class="modern-form-group">
+                            <label for="operator" class="modern-label">
+                                Operator <span class="required-mark">*</span>
+                            </label>
+                            <select name="operator" id="operator" class="modern-input" required {% if user_role == 'admin' %}disabled{% endif %}>
+                                <option value="">{% if user_role == 'admin' %}Select Supervisor first{% else %}Select Operator{% endif %}</option>
+                                {% if user_role != 'admin' %}
+                                    {% for op in operators %}
+                                        <option value="{{ op.id }}">{{ op.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- FOS Selection - ADMIN AND SUPERVISOR ONLY -->
+                    {% if user_role in ('admin', 'supervisor') %}
+                    <div class="form-col-3">
+                        <div class="modern-form-group">
+                            <label for="fos" class="modern-label">
+                                FOS <span class="required-mark">*</span>
+                            </label>
+                            <select name="fos" id="fos" class="modern-input" required {% if user_role == 'admin' %}disabled{% endif %}>
+                                <option value="">{% if user_role == 'admin' %}Select Operator first{% else %}Select FOS{% endif %}</option>
+                                {% if user_role == 'supervisor' and fos_users %}
+                                    {% for fos_user in fos_users %}
+                                        <option value="{{ fos_user.id }}">{{ fos_user.name }}</option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            {% if user_role in ('admin', 'supervisor') %}
+                            <div id="fos-loading" class="loading-indicator" style="display: none;">
+                                Loading FOS...
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
 
                 <!-- Info Message for FOS Users -->
                 {% if user_role == 'fos' %}
@@ -274,6 +279,17 @@
                     </ol>
                 </div>
             </div>
+
+            <div class="modern-form-group" style="margin-top: 1rem;">
+                <a href="{% url 'ec_excel_sample' %}" class="modern-btn modern-btn-outline" target="_blank" rel="noopener">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 0.35rem;">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Download Sample Excel Template
+                </a>
+            </div>
         </div>
 
         <!-- Submit Actions -->
@@ -304,71 +320,153 @@ document.addEventListener('DOMContentLoaded', function() {
     const fosSelect = document.getElementById('fos');
     const supervisorLoading = document.getElementById('supervisor-loading');
     const fosLoading = document.getElementById('fos-loading');
+    const userRole = "{{ user_role }}";
+    const activeSupervisorId = "{{ active_supervisor_id|default_if_none:'' }}";
 
-    // Load supervisors when operator changes
-    operatorSelect.addEventListener('change', function() {
-        const operatorId = this.value;
-        supervisorSelect.disabled = true;
-        supervisorSelect.innerHTML = '<option value="">Select Supervisor</option>';
+    function resetOperatorSelect(placeholderText) {
+        if (!operatorSelect) {
+            return;
+        }
+        const placeholder = placeholderText || (userRole === 'admin' ? 'Select Supervisor first' : 'Select Operator');
+        operatorSelect.innerHTML = `<option value="">${placeholder}</option>`;
+        if (userRole === 'admin') {
+            operatorSelect.disabled = true;
+        }
+    }
+
+    function resetFosSelect(placeholderText) {
+        if (!fosSelect) {
+            return;
+        }
+        const placeholder = placeholderText || (userRole === 'admin' ? 'Select Operator first' : 'Select FOS');
+        fosSelect.innerHTML = `<option value="">${placeholder}</option>`;
         fosSelect.disabled = true;
-        fosSelect.innerHTML = '<option value="">Select FOS</option>';
+    }
 
-        if (!operatorId) return;
+    function populateOperators(operators) {
+        if (!operatorSelect) {
+            return;
+        }
+        resetOperatorSelect('Select Operator');
+        if (operators && operators.length > 0) {
+            operators.forEach(op => {
+                const option = document.createElement('option');
+                option.value = op.id;
+                option.textContent = op.name;
+                operatorSelect.appendChild(option);
+            });
+            operatorSelect.disabled = false;
+        } else {
+            operatorSelect.innerHTML = '<option value="">No operators mapped</option>';
+            operatorSelect.disabled = true;
+        }
+    }
 
-        supervisorLoading.style.display = 'block';
+    function handleSupervisorChange() {
+        if (!operatorSelect) {
+            return;
+        }
+        const supervisorId = supervisorSelect.value;
+        resetOperatorSelect(supervisorId ? 'Select Operator' : 'Select Supervisor first');
+        resetFosSelect('Select Operator first');
 
-        // Fetch supervisors for this operator
-        fetch(`{% url 'ec_get_supervisors' %}?operator_id=${operatorId}`)
+        if (!supervisorId) {
+            if (supervisorLoading) {
+                supervisorLoading.style.display = 'none';
+            }
+            return;
+        }
+
+        if (supervisorLoading) {
+            supervisorLoading.style.display = 'block';
+        }
+
+        fetch(`{% url 'ec_get_operators' %}?supervisor_id=${supervisorId}`)
             .then(response => response.json())
             .then(data => {
-                supervisorLoading.style.display = 'none';
-                if (data.supervisors && data.supervisors.length > 0) {
-                    data.supervisors.forEach(sup => {
-                        const option = document.createElement('option');
-                        option.value = sup.id;
-                        option.textContent = sup.name;
-                        supervisorSelect.appendChild(option);
-                    });
-                    supervisorSelect.disabled = false;
+                if (supervisorLoading) {
+                    supervisorLoading.style.display = 'none';
                 }
+                populateOperators(data.operators || []);
             })
             .catch(error => {
-                supervisorLoading.style.display = 'none';
-                console.error('Error loading supervisors:', error);
+                if (supervisorLoading) {
+                    supervisorLoading.style.display = 'none';
+                }
+                console.error('Error loading operators:', error);
+                resetOperatorSelect('Unable to load operators');
             });
-    });
+    }
 
-    // Load FOS when supervisor and operator are selected
-    supervisorSelect.addEventListener('change', function() {
-        const operatorId = operatorSelect.value;
-        const supervisorId = this.value;
-        fosSelect.disabled = true;
-        fosSelect.innerHTML = '<option value="">Select FOS</option>';
+    function handleOperatorChange() {
+        if (!fosSelect) {
+            return;
+        }
 
-        if (!operatorId || !supervisorId) return;
+        const operatorId = operatorSelect ? operatorSelect.value : null;
+        const supervisorId = supervisorSelect ? supervisorSelect.value : activeSupervisorId;
 
-        fosLoading.style.display = 'block';
+        if (fosLoading) {
+            fosLoading.style.display = operatorId && supervisorId ? 'block' : 'none';
+        }
 
-        // Fetch FOS for this operator and supervisor
+        resetFosSelect(operatorId ? 'Loading FOS...' : 'Select Operator first');
+
+        if (!operatorId || !supervisorId) {
+            if (fosLoading) {
+                fosLoading.style.display = 'none';
+            }
+            return;
+        }
+
         fetch(`{% url 'ec_get_fos' %}?operator_id=${operatorId}&supervisor_id=${supervisorId}`)
             .then(response => response.json())
             .then(data => {
-                fosLoading.style.display = 'none';
-                if (data.fos_list && data.fos_list.length > 0) {
-                    data.fos_list.forEach(fos => {
+                if (fosLoading) {
+                    fosLoading.style.display = 'none';
+                }
+                if (!fosSelect) {
+                    return;
+                }
+                const fosList = data.fos_list || [];
+                if (fosList.length > 0) {
+                    fosSelect.innerHTML = '<option value="">Select FOS</option>';
+                    fosList.forEach(fos => {
                         const option = document.createElement('option');
                         option.value = fos.id;
                         option.textContent = fos.name;
                         fosSelect.appendChild(option);
                     });
                     fosSelect.disabled = false;
+                } else {
+                    fosSelect.innerHTML = '<option value="">No FOS mapped for this operator</option>';
+                    fosSelect.disabled = true;
                 }
             })
             .catch(error => {
-                fosLoading.style.display = 'none';
+                if (fosLoading) {
+                    fosLoading.style.display = 'none';
+                }
                 console.error('Error loading FOS:', error);
+                if (fosSelect) {
+                    fosSelect.innerHTML = '<option value="">Unable to load FOS</option>';
+                    fosSelect.disabled = true;
+                }
             });
-    });
+    }
+
+    if (supervisorSelect) {
+        supervisorSelect.addEventListener('change', handleSupervisorChange);
+    }
+
+    if (operatorSelect) {
+        operatorSelect.addEventListener('change', handleOperatorChange);
+    }
+
+    if (userRole === 'admin') {
+        resetOperatorSelect('Select Supervisor first');
+        resetFosSelect('Select Operator first');
+    }
 
     // Auto-calculate amount without commission
     document.addEventListener('input', function(e) {

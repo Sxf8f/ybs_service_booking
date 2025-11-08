@@ -1,6 +1,8 @@
 """
 Views for EC Recharge System
 """
+from io import BytesIO
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -10,10 +12,11 @@ from django.utils import timezone
 from datetime import date, timedelta
 import pandas as pd
 from decimal import Decimal
+from django.http import JsonResponse, HttpResponse
 
 from .models import (
-    User, Operator, EcSale, RetailerWallet, EcCollection,
-    Retailer, FosOperatorMap, RetailerFosMap, FosWallet, SupervisorWallet
+      User, Operator, EcSale, RetailerWallet, EcCollection,
+      Retailer, FosOperatorMap, RetailerFosMap, FosWallet, SupervisorWallet
 )
 from .forms_ec import (
     EcUploadSelectForm, EcManualEntryForm, EcExcelUploadForm,
@@ -45,8 +48,6 @@ def ec_upload_select(request):
 @login_required
 def get_fos_by_supervisor_operator(request):
     """API endpoint to get FOS filtered by supervisor and operator"""
-    from django.http import JsonResponse
-
     supervisor_id = request.GET.get('supervisor_id')
     operator_id = request.GET.get('operator_id')
 
@@ -70,20 +71,53 @@ def get_fos_by_supervisor_operator(request):
 @login_required
 def get_supervisors_by_operator(request):
     """API endpoint to get supervisors (Sales/Both category only)"""
-    from django.http import JsonResponse
-
     operator_id = request.GET.get('operator_id')
 
     if not operator_id:
         return JsonResponse({'supervisors': []})
 
-    # Get supervisors with Sales or Both category
+    # Supervisors who have at least one FOS mapped to this operator
+    fos_ids = FosOperatorMap.objects.filter(
+        operator_id=operator_id
+    ).values_list('fos_id', flat=True)
+
+    supervisor_ids = User.objects.filter(
+        role='fos',
+        id__in=fos_ids,
+        supervisor__isnull=False
+    ).values_list('supervisor_id', flat=True)
+
     supervisors = User.objects.filter(
         role='supervisor',
-        supervisor_category__name__in=['Sales', 'Both']
-    ).values('id', 'name')
+        supervisor_category__name__in=['Sales', 'Both'],
+        id__in=supervisor_ids
+    ).order_by('name').values('id', 'name')
 
     return JsonResponse({'supervisors': list(supervisors)})
+
+
+@login_required
+def get_operators_by_supervisor(request):
+    """API endpoint to get operators mapped to FOS under a supervisor"""
+    supervisor_id = request.GET.get('supervisor_id')
+
+    if not supervisor_id:
+        return JsonResponse({'operators': []})
+
+    fos_ids = User.objects.filter(
+        role='fos',
+        supervisor_id=supervisor_id
+    ).values_list('id', flat=True)
+
+    operator_ids = FosOperatorMap.objects.filter(
+        fos_id__in=fos_ids
+    ).values_list('operator_id', flat=True).distinct()
+
+    operators = Operator.objects.filter(
+        id__in=operator_ids
+    ).order_by('name').values('id', 'name')
+
+    return JsonResponse({'operators': list(operators)})
 
 
 @login_required
@@ -299,6 +333,41 @@ def ec_excel_upload(request):
         'fos': fos,
     }
     return render(request, 'ec_recharge/excel_upload.html', context)
+
+
+@login_required
+def ec_excel_sample_download(request):
+    """Provide a sample Excel template for EC uploads"""
+    sample_rows = [{
+        'Order ID': 'ORDER1234',
+        'Order Date': date.today().strftime('%Y-%m-%d'),
+        'Partner ID': 'PARTNER001',
+        'Partner Name': 'Sample Retailer',
+        'Transfer Amount': 1000,
+        'Commission': 50,
+        'Amount Without Commission': 950,
+    }]
+
+    df = pd.DataFrame(sample_rows, columns=[
+        'Order ID',
+        'Order Date',
+        'Partner ID',
+        'Partner Name',
+        'Transfer Amount',
+        'Commission',
+        'Amount Without Commission'
+    ])
+
+    output = BytesIO()
+    df.to_excel(output, index=False)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="ec_recharge_sample.xlsx"'
+    return response
 
 
 # ==================== EC COLLECTION VIEWS ====================
@@ -1014,16 +1083,22 @@ def ec_upload_all_in_one(request):
     operators = Operator.objects.all().order_by('name')
 
     # Filter operators and FOS based on role
+    active_supervisor_id = None
     if user.role == 'fos':
         # FOS: show only operators they have assigned via FosOperatorMap
         fos_operators = FosOperatorMap.objects.filter(fos=user).values_list('operator_id', flat=True)
         operators = operators.filter(id__in=fos_operators)
         supervisors = None  # FOS doesn't select supervisor
         fos_users = None  # FOS doesn't select FOS (it's themselves)
+        active_supervisor_id = user.supervisor_id
     elif user.role == 'supervisor':
         # Supervisor: show all operators, only their FOS
         supervisors = None  # Supervisor doesn't select themselves
         fos_users = User.objects.filter(role='fos', supervisor=user).order_by('name')
+        active_supervisor_id = user.id
+        fos_ids = fos_users.values_list('id', flat=True)
+        operator_ids = FosOperatorMap.objects.filter(fos_id__in=fos_ids).values_list('operator_id', flat=True)
+        operators = operators.filter(id__in=operator_ids)
     else:  # admin
         # Admin: show all supervisors (Sales only) and will dynamically load FOS
         supervisors = User.objects.filter(
@@ -1037,6 +1112,7 @@ def ec_upload_all_in_one(request):
         'supervisors': supervisors,
         'fos_users': fos_users,
         'user_role': user.role,
+        'active_supervisor_id': active_supervisor_id,
     }
     return render(request, 'ec_recharge/upload_all_in_one.html', context)
 

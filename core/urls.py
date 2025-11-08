@@ -137,8 +137,10 @@ urlpatterns = [
 
     # EC Recharge System URLs
     path('ec/upload/', views_ec.ec_upload_all_in_one, name='ec_upload_select'),
+    path('ec/sample/excel/', views_ec.ec_excel_sample_download, name='ec_excel_sample'),
     path('ec/api/get-fos/', views_ec.get_fos_by_supervisor_operator, name='ec_get_fos'),
     path('ec/api/get-supervisors/', views_ec.get_supervisors_by_operator, name='ec_get_supervisors'),
+    path('ec/api/get-operators/', views_ec.get_operators_by_supervisor, name='ec_get_operators'),
 
     # EC Collection URLs
     path('ec/collect/retailer/', views_ec.ec_collect_from_retailer, name='ec_collect_from_retailer'),
